@@ -67,6 +67,7 @@ pub async fn main() {
     });
 
     //TODO: Insure proper error handling here.
+    //TODO: Create use prompt for channel name.
     // join a channel
     client.join("brandontdev".to_owned());
 
