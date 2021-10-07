@@ -1,7 +1,10 @@
+use std::unreachable;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::message::ClearChatAction;
 use twitch_irc::message::HostTargetAction;
 use twitch_irc::message::ServerMessage;
+use twitch_irc::message::UserNoticeEvent;
+use twitch_irc::message::UserNoticeMessage;
 use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
@@ -18,17 +21,19 @@ pub async fn main() {
     let join_handle = tokio::spawn(async move {
         while let Some(message) = incoming_messages.recv().await {
             match message {
+                // Format and print user chat messages:
                 ServerMessage::Privmsg(prvmsg) => println!(
                     "{} [{}]: {}",
                     prvmsg.server_timestamp.format("%H:%M"),
                     prvmsg.sender.name,
                     prvmsg.message_text
                 ),
+
+                // User time-outs, bans, and a cleared chat history messages:
                 ServerMessage::ClearChat(clearchat) => match clearchat.action {
-                    ClearChatAction::UserBanned {
-                        user_login,
-                        ..
-                    } => println!("{} has been banned.", user_login),
+                    ClearChatAction::UserBanned { user_login, .. } => {
+                        println!("{} has been banned.", user_login)
+                    }
                     ClearChatAction::UserTimedOut {
                         user_login,
                         timeout_length,
@@ -40,7 +45,9 @@ pub async fn main() {
                     ),
                     ClearChatAction::ChatCleared => println!("Chat has been cleared."),
                 },
-               ServerMessage::HostTarget(hosttargetmessage) => match hosttargetmessage.action {
+
+                // Channel-hosting messages:
+                ServerMessage::HostTarget(hosttargetmessage) => match hosttargetmessage.action {
                     HostTargetAction::HostModeOn {
                         hosted_channel_login,
                         viewer_count,
@@ -53,21 +60,49 @@ pub async fn main() {
                     }
                     HostTargetAction::HostModeOff { .. } => println!("No longer hosting."),
                 },
+
+                // Event messages, raids, subs:
+                ServerMessage::UserNotice(usernotice) => match usernotice.event {
+                    UserNoticeEvent::SubOrResub {
+                        is_resub,
+                        cumulative_months,
+                        streak_months,
+                        sub_plan,
+                        sub_plan_name,
+                    } => {
+                        if is_resub {
+                            println!(
+                                "{} resubscribed for {} months with {}!",
+                                usernotice.sender.name, 
+                                cumulative_months,
+                                sub_plan,
+                            )
+                        } else {
+
+                        }
+                    }
+                    _ => {}
+                },
+
+                // Simple server messages related to user and moderator actions and server-side
+                // messages:
+
+                //TODO: Look into connection messages.
                 //TODO: Look into formatting, and proper message removal.
                 ServerMessage::ClearMsg(_) => println!("Message deleted."),
                 ServerMessage::GlobalUserState(_) => println!("Login successful!"),
                 ServerMessage::Part(_) => println!("Departed chat."),
                 ServerMessage::Notice(notice) => println!("{}", notice.message_text),
                 ServerMessage::Join(join) => println!("Joined {}'s chat!", join.channel_login),
-                //TODO: ServerMessage::UserNotice
-                //TODO: Look into connection messages.
+
+                // Any other events that do not need to be verbose
                 _ => {}
             }
         }
     });
 
     //TODO: Insure proper error handling here.
-    //TODO: Create use prompt for channel name.
+    //TODO: Create user prompt for channel name.
     // join a channel
     client.join("brandontdev".to_owned());
 
