@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::unreachable;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::message::ClearChatAction;
@@ -33,7 +32,7 @@ pub async fn main() {
                 // User time-outs, bans, and a cleared chat history messages:
                 ServerMessage::ClearChat(clearchat) => match clearchat.action {
                     ClearChatAction::UserBanned { user_login, .. } => {
-                        println!("{name} has been banned.", name = user_login)
+                        println!("{name} has been banned.", name=user_login)
                     }
                     ClearChatAction::UserTimedOut {
                         user_login,
@@ -41,8 +40,8 @@ pub async fn main() {
                         ..
                     } => println!(
                         "{name} has been timed-out for {seconds} seconds.",
-                        name = user_login,
-                        seconds = timeout_length.as_secs()
+                        name=user_login,
+                        seconds=timeout_length.as_secs()
                     ),
                     ClearChatAction::ChatCleared => println!("Chat has been cleared."),
                 },
@@ -74,15 +73,12 @@ pub async fn main() {
                         if is_resub {
                             println!(
                                 "{name} has subscribed for {months} months with {plan}!",
-                                name = usernotice.sender.name,
-                                months = cumulative_months,
-                                plan = sub_plan,
+                                name=usernotice.sender.name, months=cumulative_months, plan=sub_plan,
                             )
                         } else {
                             println!(
                                 "{name} has just subscribed with {plan}!",
-                                name = usernotice.sender.name,
-                                plan = sub_plan,
+                                name=usernotice.sender.name, plan=sub_plan,
                             )
                         }
                     }
@@ -93,8 +89,7 @@ pub async fn main() {
                     } => {
                         println!(
                             "{name} raided with {viewers} viewers!",
-                            name = usernotice.sender.name,
-                            viewers = viewer_count,
+                            name=usernotice.sender.name, viewers=viewer_count,
                         )
                     }
 
@@ -108,59 +103,12 @@ pub async fn main() {
                     } => {
                         if is_sender_anonymous {
                             println!(
-                                "An anonymous user gifted {} a {} for {:?}!",
-                                recipient.name, sub_plan, num_gifted_months,
-                            )
-                        } else {
-                            println!(
-                                "{} gifted {} a {} for {:?}!",
-                                usernotice.sender.name, recipient.name, sub_plan, num_gifted_months,
+                                "An anonymous user gifted {recipient} a {plan} for {gifted_months}",
+                                recipient=recipient,
+                                plan=sub_plan,
+                                gifted_months=num_gifted_months,
                             )
                         }
-                    }
-
-                    UserNoticeEvent::SubMysteryGift {
-                        mass_gift_count,
-                        sender_total_gifts,
-                        sub_plan,
-                    } => {
-                        println!(
-                            "{} is gifting {} subs! They've gifted a total of {}!",
-                            usernotice.sender.name, mass_gift_count, sender_total_gifts,
-                        )
-                    }
-
-                    UserNoticeEvent::AnonSubMysteryGift {
-                        mass_gift_count,
-                        sub_plan,
-                    } => {
-                        println!("An anonymous user is gifting {} subs!", mass_gift_count)
-                    }
-
-                    UserNoticeEvent::GiftPaidUpgrade {
-                        gifter_login,
-                        gifter_name,
-                        promotion,
-                    } => {
-                        println!("{} continued their gifted sub from {}!", usernotice.sender.name, gifter_name)
-                    }
-
-                    UserNoticeEvent::AnonGiftPaidUpgrade {
-                        promotion
-                    } => {
-                        println!("{} continued their gifted sub from an anonymous user!", usernotice.sender.name)
-                    }
-
-                    UserNoticeEvent::Ritual {
-                        ritual_name,
-                    } => {
-                        println!("{} is new to chat! Say hi!", usernotice.sender.name)
-                    }
-
-                    UserNoticeEvent::BitsBadgeTier {
-                        threshold,
-                    } => {
-                        println!("{} just earned the {} bits badge!", usernotice.sender.name, threshold)
                     }
                     _ => {}
                 },
