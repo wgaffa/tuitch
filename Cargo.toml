@@ -9,3 +9,5 @@ edition = "2018"
 [dependencies]
 twitch-irc = "3.0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tui = "0.16"
+termion = "1.5"
