@@ -11,3 +11,4 @@ twitch-irc = "3.0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 tui = "0.16"
 termion = "1.5"
+anyhow = "1.0"

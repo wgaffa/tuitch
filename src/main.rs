@@ -1,12 +1,12 @@
 #![allow(dead_code)]
 #![allow(unused_variables)]
 
+use crate::messages::handle_message;
+use crate::terminal::run_terminal;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
-use crate::messages::handle_message;
-use crate::terminal::run_terminal;
 
 mod messages;
 mod terminal;
@@ -23,10 +23,13 @@ pub async fn main() {
     // first thing you should do: start consuming incoming
     // messages, otherwise they will back up.
     let join_handle = tokio::spawn(async move {
-        while let Some(message) = incoming_messages.recv().await {handle_message(message);}});
+        while let Some(message) = incoming_messages.recv().await {
+            handle_message(message);
+        }
+    });
 
     //TODO: Insure proper error handling here.
-    //TODO: Create user prompt for channel name.
+    //TODO: Create cmd-line arg for user/channel name.
     // join a channel
     client.join("brandontdev".to_owned());
 
@@ -34,5 +37,4 @@ pub async fn main() {
     // If you return instead of waiting,
     // the background task will exit.
     join_handle.await.unwrap();
-
 }
