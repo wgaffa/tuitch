@@ -3,6 +3,8 @@ use twitch_irc::message::HostTargetAction;
 use twitch_irc::message::ServerMessage;
 use twitch_irc::message::UserNoticeEvent;
 
+// TODO: use owo-colors crate for color and style formatting.
+
 pub fn handle_message(message: ServerMessage) -> String {
     match message {
         // Format and print user chat messages:
@@ -154,11 +156,11 @@ pub fn handle_message(message: ServerMessage) -> String {
             }
         },
 
-        // Simple server messages related to user and moderator actions and server-side
-        // messages:
+        // Simple server messages related to user and moderator actions and 
+        // server-side messages:
 
         //TODO: Look into connection messages.
-        //TODO: Look into formatting, and proper message removal.
+        //TODO: Look into and proper message removal.
         ServerMessage::ClearMsg(_) => format!("Message deleted."),
         ServerMessage::GlobalUserState(_) => format!("Login successful!"),
         ServerMessage::Part(_) => format!("Departed chat."),

@@ -14,7 +14,9 @@ mod cli;
 
 #[tokio::main]
 pub async fn main() {
-    // take command-line arguments for channel chat and username:
+    // take command-line arguments for channel name.
+    // TODO: Will also take in user name when user authentication
+    // is implimented.
     let args = Cli::from_args();
 
     // default configuration is to join chat as anonymous.
@@ -29,7 +31,9 @@ pub async fn main() {
         }
     });
 
-    //TODO: Insure proper error handling here:
+    // TODO: Need error-handling for channels
+    // that do not exist and incorrect user input.
+
     // Join channel chat from argument string:
     client.join(args.channel.to_owned());
 
