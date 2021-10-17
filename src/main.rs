@@ -1,7 +1,8 @@
-#![allow(dead_code, unused_variables)]
+#![allow(dead_code, unused_variables, unreachable_code)]
 
 use crate::cli::Cli;
 use crate::messages::handle_message;
+use dotenv;
 use structopt::StructOpt;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
@@ -13,14 +14,17 @@ mod messages;
 
 #[tokio::main]
 pub async fn main() {
-    // take command-line arguments for channel name.
-    // TODO: Will also take in user name when user authentication
-    // is implimented.
+    dotenv::dotenv().ok();
+
+    // take command-line arguments for user and channel names.
     let args = Cli::from_args();
     let channel_name: String = args.channel;
+    let login_name: String = args.user;
 
-    // default configuration is to join chat as anonymous.
-    let config = ClientConfig::default();
+    let config = ClientConfig::new_simple(StaticLoginCredentials::new(
+        login_name,
+        Some(dotenv::var("OAUTH_TOKEN").unwrap()),
+    ));
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
@@ -35,7 +39,7 @@ pub async fn main() {
     // that do not exist and incorrect user input.
 
     // Join channel chat from argument string:
-    client.join(channel_name.to_owned());
+    client.join(channel_name);
 
     // keep the tokio executor alive.
     // If you return instead of waiting,
