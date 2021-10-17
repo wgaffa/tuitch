@@ -1,5 +1,4 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
+#![allow(dead_code, unused_variables)]
 
 use crate::messages::handle_message;
 use crate::cli::Cli;
@@ -18,6 +17,7 @@ pub async fn main() {
     // TODO: Will also take in user name when user authentication
     // is implimented.
     let args = Cli::from_args();
+    let channel_name: String = args.channel;
 
     // default configuration is to join chat as anonymous.
     let config = ClientConfig::default();
@@ -35,7 +35,7 @@ pub async fn main() {
     // that do not exist and incorrect user input.
 
     // Join channel chat from argument string:
-    client.join(args.channel.to_owned());
+    client.join(channel_name.to_owned());
 
     // keep the tokio executor alive.
     // If you return instead of waiting,
