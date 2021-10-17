@@ -154,7 +154,7 @@ pub fn handle_message(message: ServerMessage) {
             _ => {}
         },
 
-        // Simple server messages related to user and moderator actions and 
+        // Simple server messages related to user and moderator actions and
         // server-side messages:
 
         //TODO: Look into connection messages.

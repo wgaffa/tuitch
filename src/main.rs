@@ -1,15 +1,15 @@
 #![allow(dead_code, unused_variables)]
 
-use crate::messages::handle_message;
 use crate::cli::Cli;
+use crate::messages::handle_message;
 use structopt::StructOpt;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
 use twitch_irc::TwitchIRCClient;
 
-mod messages;
 mod cli;
+mod messages;
 
 #[tokio::main]
 pub async fn main() {
