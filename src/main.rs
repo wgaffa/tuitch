@@ -1,8 +1,8 @@
 #![allow(dead_code, unused_variables, unreachable_code)]
 
+use dotenv;
 use crate::cli::Cli;
 use crate::messages::handle_message;
-use dotenv;
 use structopt::StructOpt;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
@@ -21,10 +21,12 @@ pub async fn main() {
     let channel_name: String = args.channel;
     let login_name: String = args.user;
 
+    // Login with CLI argument username.
     let config = ClientConfig::new_simple(StaticLoginCredentials::new(
         login_name,
         Some(dotenv::var("OAUTH_TOKEN").unwrap()),
     ));
+
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
