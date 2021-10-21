@@ -175,9 +175,12 @@ pub fn format_message(message: ServerMessage) -> String {
 }
 
 pub fn print_message(server_message: String) {
-    // If there's user input, clear the current line
-    // and place the cursor at the beginning of the line.
-    print!("\x1b7\x1b\r\x1b[K");
+    // Use ANSI escape sequences to account for incoming messages
+    // occuring with user chat input.
+    //
+    // Clear the current line and place the cursor at the beginning of the line.
+    // Save the previous cursor position.
+    print!("\x1b7\r\x1b[K");
 
     // print server message
     print!("{}\n", server_message);
