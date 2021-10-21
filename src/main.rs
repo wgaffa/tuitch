@@ -1,8 +1,9 @@
 #![allow(dead_code, unused_variables, unreachable_code)]
 
-use dotenv;
 use crate::cli::Cli;
-use crate::messages::handle_message;
+use crate::messages::format_message;
+use crate::messages::print_message;
+use dotenv;
 use structopt::StructOpt;
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
@@ -33,7 +34,7 @@ pub async fn main() {
     // start consuming incoming messages, otherwise they will back up.
     let join_handle = tokio::spawn(async move {
         while let Some(message) = incoming_messages.recv().await {
-            handle_message(message);
+            print_message(format_message(message));
         }
     });
 
