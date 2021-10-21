@@ -2,6 +2,7 @@ use twitch_irc::message::ClearChatAction;
 use twitch_irc::message::HostTargetAction;
 use twitch_irc::message::ServerMessage;
 use twitch_irc::message::UserNoticeEvent;
+use std::io::{stdout, Write};
 
 // TODO: use owo-colors crate for color and style formatting.
 
@@ -173,7 +174,12 @@ pub fn format_message(message: ServerMessage) -> String {
     }
 }
 
-pub fn print_message(message: String) {
-    print!("ESC7");
-    print!("{}", message);
+pub fn print_message(server_message: String) {
+    // If there's user input, clear the current line
+    // and place the cursor at the beginning of the line.
+    print!("\x1b7\x1b\r\x1b[K");
+
+    // print server message
+    print!("{}\n", server_message);
+    stdout().flush().unwrap();
 }

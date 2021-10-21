@@ -1,4 +1,4 @@
-#![allow(dead_code, unused_variables, unreachable_code)]
+#![allow(dead_code, unused_variables, unreachable_code, unused_must_use)]
 
 use crate::cli::Cli;
 use crate::messages::format_message;
