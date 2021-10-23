@@ -1,8 +1,8 @@
+use std::io::{stdout, Write};
 use twitch_irc::message::ClearChatAction;
 use twitch_irc::message::HostTargetAction;
 use twitch_irc::message::ServerMessage;
 use twitch_irc::message::UserNoticeEvent;
-use std::io::{stdout, Write};
 
 // TODO: use owo-colors crate for color and style formatting.
 
@@ -76,13 +76,11 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
             UserNoticeEvent::Raid {
                 viewer_count,
                 profile_image_url,
-            } => {
-                Some(format!(
-                    "{name} raided with {viewers} viewers!",
-                    name = usernotice.sender.name,
-                    viewers = viewer_count,
-                ))
-            }
+            } => Some(format!(
+                "{name} raided with {viewers} viewers!",
+                name = usernotice.sender.name,
+                viewers = viewer_count,
+            )),
 
             UserNoticeEvent::SubGift {
                 is_sender_anonymous,
@@ -109,52 +107,44 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
                 mass_gift_count,
                 sender_total_gifts,
                 sub_plan,
-            } => {
-                Some(format!(
-                    "{} is gifting {} subs! They've gifted a total of {}!",
-                    usernotice.sender.name, mass_gift_count, sender_total_gifts,
-                ))
-            }
+            } => Some(format!(
+                "{} is gifting {} subs! They've gifted a total of {}!",
+                usernotice.sender.name, mass_gift_count, sender_total_gifts,
+            )),
 
             UserNoticeEvent::AnonSubMysteryGift {
                 mass_gift_count,
                 sub_plan,
-            } => {
-                Some(format!("An anonymous user is gifting {} subs!", mass_gift_count))
-            }
+            } => Some(format!(
+                "An anonymous user is gifting {} subs!",
+                mass_gift_count
+            )),
 
             UserNoticeEvent::GiftPaidUpgrade {
                 gifter_login,
                 gifter_name,
                 promotion,
-            } => {
-                Some(format!(
-                    "{} continued their gifted sub from {}!",
-                    usernotice.sender.name, gifter_name
-                ))
-            }
+            } => Some(format!(
+                "{} continued their gifted sub from {}!",
+                usernotice.sender.name, gifter_name
+            )),
 
-            UserNoticeEvent::AnonGiftPaidUpgrade { promotion } => {
-                Some(format!(
-                    "{} continued their gifted sub from an anonymous user!",
-                    usernotice.sender.name
-                ))
-            }
+            UserNoticeEvent::AnonGiftPaidUpgrade { promotion } => Some(format!(
+                "{} continued their gifted sub from an anonymous user!",
+                usernotice.sender.name
+            )),
 
-            UserNoticeEvent::Ritual { ritual_name } => {
-                Some(format!("{} is new to chat! Say hi!", usernotice.sender.name))
-            }
+            UserNoticeEvent::Ritual { ritual_name } => Some(format!(
+                "{} is new to chat! Say hi!",
+                usernotice.sender.name
+            )),
 
-            UserNoticeEvent::BitsBadgeTier { threshold } => {
-                Some(format!(
-                    "{} just earned the {} bits badge!",
-                    usernotice.sender.name, threshold
-                ))
-            }
+            UserNoticeEvent::BitsBadgeTier { threshold } => Some(format!(
+                "{} just earned the {} bits badge!",
+                usernotice.sender.name, threshold
+            )),
 
-            _ => {
-                None
-            }
+            _ => None,
         },
 
         // Simple server messages related to user and moderator actions and
@@ -168,22 +158,13 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
         ServerMessage::Join(join) => Some(format!("Joined {}'s chat!", join.channel_login)),
 
         // Any other events that do not need to be verbose
-        _ => {
-            None
-        }
+        _ => None,
     }
 }
 
 pub fn print_message(server_message: Option<String>) {
-    // Use ANSI escape sequences to account for incoming messages
-    // occuring with user chat input.
-    //
-    // Clear the current line and place the cursor at the beginning of the line.
-    // Save the previous cursor position.
-
-    if let Some(message) = server_message{
-        print!("\x1b7\r\x1b[K");
-        print!("{}\n", message);
+    if let Some(message) = server_message {
+        print!("{}\r\n", message);
     }
     // print server message
     stdout().flush().unwrap();
