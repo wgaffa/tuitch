@@ -6,31 +6,31 @@ use std::io::{stdout, Write};
 
 // TODO: use owo-colors crate for color and style formatting.
 
-pub fn format_message(message: ServerMessage) -> String {
+pub fn format_message(message: ServerMessage) -> Option<String> {
     match message {
         // Format and print user chat messages:
-        ServerMessage::Privmsg(prvmsg) => format!(
+        ServerMessage::Privmsg(prvmsg) => Some(format!(
             "{} [{}]: {}",
             prvmsg.server_timestamp.format("%H:%M"),
             prvmsg.sender.name,
             prvmsg.message_text
-        ),
+        )),
 
         // User time-outs, bans, and a cleared chat history messages:
         ServerMessage::ClearChat(clearchat) => match clearchat.action {
             ClearChatAction::UserBanned { user_login, .. } => {
-                format!("{name} has been banned.", name = user_login)
+                Some(format!("{name} has been banned.", name = user_login))
             }
             ClearChatAction::UserTimedOut {
                 user_login,
                 timeout_length,
                 ..
-            } => format!(
+            } => Some(format!(
                 "{name} has been timed-out for {seconds} seconds.",
                 name = user_login,
                 seconds = timeout_length.as_secs()
-            ),
-            ClearChatAction::ChatCleared => format!("Chat has been cleared."),
+            )),
+            ClearChatAction::ChatCleared => Some(format!("Chat has been cleared.")),
         },
 
         // Channel-hosting messages:
@@ -40,12 +40,12 @@ pub fn format_message(message: ServerMessage) -> String {
                 viewer_count,
             } => {
                 let viewer_count = viewer_count.unwrap_or(0);
-                format!(
+                Some(format!(
                     "Hosted {} with {:#?} users",
                     hosted_channel_login, viewer_count
-                )
+                ))
             }
-            HostTargetAction::HostModeOff { .. } => format!("No longer hosting."),
+            HostTargetAction::HostModeOff { .. } => Some(format!("No longer hosting.")),
         },
 
         // Event messages, raids, subs:
@@ -58,18 +58,18 @@ pub fn format_message(message: ServerMessage) -> String {
                 sub_plan_name,
             } => {
                 if is_resub {
-                    format!(
+                    Some(format!(
                         "{name} has subscribed for {months} months with {plan}!",
                         name = usernotice.sender.name,
                         months = cumulative_months,
                         plan = sub_plan,
-                    )
+                    ))
                 } else {
-                    format!(
+                    Some(format!(
                         "{name} has just subscribed with {plan}!",
                         name = usernotice.sender.name,
                         plan = sub_plan,
-                    )
+                    ))
                 }
             }
 
@@ -77,11 +77,11 @@ pub fn format_message(message: ServerMessage) -> String {
                 viewer_count,
                 profile_image_url,
             } => {
-                format!(
+                Some(format!(
                     "{name} raided with {viewers} viewers!",
                     name = usernotice.sender.name,
                     viewers = viewer_count,
-                )
+                ))
             }
 
             UserNoticeEvent::SubGift {
@@ -93,15 +93,15 @@ pub fn format_message(message: ServerMessage) -> String {
                 num_gifted_months,
             } => {
                 if is_sender_anonymous {
-                    format!(
+                    Some(format!(
                         "An anonymous user gifted {} a {} for {:?}!",
                         recipient.name, sub_plan, num_gifted_months,
-                    )
+                    ))
                 } else {
-                    format!(
+                    Some(format!(
                         "{} gifted {} a {} for {:?}!",
                         usernotice.sender.name, recipient.name, sub_plan, num_gifted_months,
-                    )
+                    ))
                 }
             }
 
@@ -110,17 +110,17 @@ pub fn format_message(message: ServerMessage) -> String {
                 sender_total_gifts,
                 sub_plan,
             } => {
-                format!(
+                Some(format!(
                     "{} is gifting {} subs! They've gifted a total of {}!",
                     usernotice.sender.name, mass_gift_count, sender_total_gifts,
-                )
+                ))
             }
 
             UserNoticeEvent::AnonSubMysteryGift {
                 mass_gift_count,
                 sub_plan,
             } => {
-                format!("An anonymous user is gifting {} subs!", mass_gift_count)
+                Some(format!("An anonymous user is gifting {} subs!", mass_gift_count))
             }
 
             UserNoticeEvent::GiftPaidUpgrade {
@@ -128,32 +128,32 @@ pub fn format_message(message: ServerMessage) -> String {
                 gifter_name,
                 promotion,
             } => {
-                format!(
+                Some(format!(
                     "{} continued their gifted sub from {}!",
                     usernotice.sender.name, gifter_name
-                )
+                ))
             }
 
             UserNoticeEvent::AnonGiftPaidUpgrade { promotion } => {
-                format!(
+                Some(format!(
                     "{} continued their gifted sub from an anonymous user!",
                     usernotice.sender.name
-                )
+                ))
             }
 
             UserNoticeEvent::Ritual { ritual_name } => {
-                format!("{} is new to chat! Say hi!", usernotice.sender.name)
+                Some(format!("{} is new to chat! Say hi!", usernotice.sender.name))
             }
 
             UserNoticeEvent::BitsBadgeTier { threshold } => {
-                format!(
+                Some(format!(
                     "{} just earned the {} bits badge!",
                     usernotice.sender.name, threshold
-                )
+                ))
             }
 
             _ => {
-                format!("Unknown Message")
+                None
             }
         },
 
@@ -161,28 +161,30 @@ pub fn format_message(message: ServerMessage) -> String {
         // server-side messages:
 
         //TODO: Look into and proper message removal.
-        ServerMessage::ClearMsg(_) => format!("Message deleted."),
-        ServerMessage::GlobalUserState(_) => format!("Login successful!"),
-        ServerMessage::Part(_) => format!("Departed chat."),
-        ServerMessage::Notice(notice) => format!("{}", notice.message_text),
-        ServerMessage::Join(join) => format!("Joined {}'s chat!", join.channel_login),
+        ServerMessage::ClearMsg(_) => Some(format!("Message deleted.")),
+        ServerMessage::GlobalUserState(_) => Some(format!("Login successful!")),
+        ServerMessage::Part(_) => Some(format!("Departed chat.")),
+        ServerMessage::Notice(notice) => Some(format!("{}", notice.message_text)),
+        ServerMessage::Join(join) => Some(format!("Joined {}'s chat!", join.channel_login)),
 
         // Any other events that do not need to be verbose
         _ => {
-            format!("Unknown Message")
+            None
         }
     }
 }
 
-pub fn print_message(server_message: String) {
+pub fn print_message(server_message: Option<String>) {
     // Use ANSI escape sequences to account for incoming messages
     // occuring with user chat input.
     //
     // Clear the current line and place the cursor at the beginning of the line.
     // Save the previous cursor position.
-    print!("\x1b7\r\x1b[K");
 
+    if let Some(message) = server_message{
+        print!("\x1b7\r\x1b[K");
+        print!("{}\n", message);
+    }
     // print server message
-    print!("{}\n", server_message);
     stdout().flush().unwrap();
 }
