@@ -1,4 +1,10 @@
-#![allow(dead_code, unused_variables, unreachable_code, unused_must_use)]
+#![allow(
+    dead_code,
+    unused_variables,
+    unreachable_code,
+    unused_must_use,
+    path_statements
+)]
 
 use crate::cli::Cli;
 use crate::messages::format_message;
@@ -43,6 +49,10 @@ pub async fn main() {
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
+    // TODO: This is bad, need to change. But it works.
+    let client2 = client.clone();
+    let channel_name2 = channel_name.clone();
+
     // start consuming incoming messages, otherwise they will back up.
     let join_handle = tokio::spawn(async move {
         loop {
@@ -60,8 +70,12 @@ pub async fn main() {
         // Set terminal to raw mode to allow reading
         // stdin one key at a time.
         let mut stdout = io::stdout().into_raw_mode().unwrap();
+
         // Use asynchronous stdin.
         let mut stdin = termion::async_stdin().keys();
+
+        // Input buffer; save user input per keystroke.
+        let mut input_buffer = String::new();
 
         loop {
             // Read input (if any)
@@ -76,14 +90,37 @@ pub async fn main() {
                         // Send message to receivers to end process.
                         shutdown_tx.send(()).ok();
                         break;
-                    },
+                    }
 
-                    // Else, print the pressed key:
-                    _ => {
-                        // TODO: need a match here for properly formatted imput.
-                        write!(stdout, "{:?}", key).unwrap();
+                    // Send typed user input when 'Enter' key is pressed.
+                    termion::event::Key::Char('\n') => {
+                        client2
+                            .privmsg(channel_name2.to_owned(), input_buffer.to_owned())
+                            .await
+                            .unwrap();
+                        input_buffer.clear();
+                        write!(stdout, "{}\r", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
                     }
+
+                    // Else, print the pressed key:
+                    termion::event::Key::Char(user_input) => {
+                        print!("{}", user_input);
+                        input_buffer.push(user_input);
+                        stdout.lock().flush().unwrap();
+                    },
+
+                    // On 'Backspace'
+                    // Remove the last element from the input_buffer,
+                    // move the cursor one column to the left,
+                    // and print a ' ' character to remove the
+                    // previous character. 
+                    termion::event::Key::Backspace => {
+                       input_buffer.pop();
+                       write!(stdout, "\x1b[1D\x1b[0K");
+                       stdout.lock().flush().unwrap();
+                    }
+                    _ => {}
                 }
             }
             thread::sleep(time::Duration::from_millis(50));

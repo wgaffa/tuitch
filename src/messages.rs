@@ -164,8 +164,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 
 pub fn print_message(server_message: Option<String>) {
     if let Some(message) = server_message {
-        print!("{}\r\n", message);
+        print!("\x1b7{}\r\n\x1b8", message);
     }
-    // print server message
     stdout().flush().unwrap();
 }
