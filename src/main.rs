@@ -61,6 +61,9 @@ pub async fn main() {
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
+                    // TODO: Once the input_buffer is accessible to this 
+                    // task, it needs to be passed in as the second
+                    // argument to the print_message fn.
                     print_message(format_message(message));
                 },
                 // End process if sender message received.
@@ -79,6 +82,8 @@ pub async fn main() {
         let mut stdin = termion::async_stdin().keys();
 
         // Input buffer; save user input per keystroke.
+        // TODO: This variable needs to be accessible to
+        // both tokio tasks.
         let mut input_buffer = String::new();
 
         loop {
