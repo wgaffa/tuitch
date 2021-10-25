@@ -131,7 +131,9 @@ pub async fn main() {
                     // to the end of the line.
                     termion::event::Key::Backspace => {
                         input_buffer.pop();
-                        write!(stdout, "\x1b[1D\x1b[0K");
+                        write!(stdout, "{}{}",
+                            termion::cursor::Left(1),
+                            termion::clear::AfterCursor);
                         stdout.lock().flush().unwrap();
                     }
                     _ => {}

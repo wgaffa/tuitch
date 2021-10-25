@@ -165,7 +165,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 // TODO: Onve the input_buffer is accessible to both tokio tasks,
 // it will be passed into this fn so the user input is saved when an
 // incoming server message is printed while the user is typing a message.
-pub fn print_message(server_message: Option<String>, input_buffer: String) {
+pub fn print_message(server_message: Option<String>/*, input_buffer: String*/) {
 
     // When a server message is received, it is formatted in format_message,
     // then passed here to print to the console. ANSI escapes are called to save
@@ -174,7 +174,11 @@ pub fn print_message(server_message: Option<String>, input_buffer: String) {
     // newline, and return the cursor to the origional position. When the 
     // user input_buffer is accessible, it is then printed again to the screen.
     if let Some(message) = server_message {
-        print!("\x1b7\x1b[K{}\r\n\x1b8{}", message, input_buffer);
+        print!("{clear}\r{msg}\r\n{input}",
+            clear = termion::clear::CurrentLine,
+            msg = message,
+            input = ">", /*, input_buffer*/
+            );
     }
     stdout().flush().unwrap();
 }
