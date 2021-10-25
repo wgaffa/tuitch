@@ -14,6 +14,7 @@ use dotenv;
 use std::io;
 use std::io::Write;
 use std::thread;
+use std::sync::Arc;
 use structopt::StructOpt;
 use termion;
 use termion::input::TermRead;
@@ -34,7 +35,7 @@ pub async fn main() {
 
     // take command-line arguments for user and channel names.
     let args = Cli::from_args();
-    let channel_name: String = args.channel;
+    let channel_name = Arc::new(args.channel);
     let login_name: String = args.user;
 
     // Login with CLI argument username.
@@ -53,7 +54,7 @@ pub async fn main() {
 
     // TODO: This is bad, need to change. But it works.
     let client2 = client.clone();
-    let channel_name2 = channel_name.clone();
+    let channel_name2 = Arc::clone(&channel_name);
 
     // start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
@@ -99,7 +100,7 @@ pub async fn main() {
                     // Send typed user input when 'Enter' key is pressed.
                     termion::event::Key::Char('\n') => {
                         client2
-                            .privmsg(channel_name2.to_owned(), input_buffer.to_owned())
+                            .privmsg(channel_name2.to_string(), input_buffer.to_owned())
                             .await
                             .unwrap();
 
@@ -142,7 +143,7 @@ pub async fn main() {
     // that do not exist and incorrect user input.
 
     // Join channel chat from argument string:
-    client.join(channel_name);
+    client.join(channel_name.to_string());
 
     // keep the tokio executor alive.
     // If you return instead of waiting,
