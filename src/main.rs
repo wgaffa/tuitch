@@ -64,7 +64,7 @@ pub async fn main() {
                     // TODO: Once the input_buffer is accessible to this 
                     // task, it needs to be passed in as the second
                     // argument to the print_message fn.
-                    print_message(format_message(message));
+                    print_message(format_message(message), input_buffer);
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
