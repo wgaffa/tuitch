@@ -10,6 +10,7 @@ use crate::cli::Cli;
 use crate::messages::format_message;
 use crate::messages::print_message;
 use core::time;
+use std::io::stdout;
 use dotenv;
 use std::io;
 use std::io::Write;
@@ -18,6 +19,7 @@ use structopt::StructOpt;
 use termion;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
+use termion::screen::AlternateScreen;
 use tokio::{select, sync::broadcast};
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
@@ -29,6 +31,9 @@ mod messages;
 
 #[tokio::main]
 pub async fn main() {
+    // Create alternate screen, restores terminal on drop.
+    let screen = AlternateScreen::from(stdout());
+
     // Load env file constants.
     dotenv::dotenv().ok();
 
@@ -64,7 +69,7 @@ pub async fn main() {
                     // TODO: Once the input_buffer is accessible to this 
                     // task, it needs to be passed in as the second
                     // argument to the print_message fn.
-                    print_message(format_message(message), input_buffer);
+                    print_message(format_message(message));
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
