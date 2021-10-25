@@ -43,6 +43,8 @@ pub async fn main() {
         Some(dotenv::var("OAUTH_TOKEN").unwrap()),
     ));
 
+    // Create tx/rx to send and receive shutdown signal
+    // when specific user input is detected.
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
     let shutdown_rx2 = shutdown_tx.subscribe();
 
@@ -54,6 +56,7 @@ pub async fn main() {
     let channel_name2 = channel_name.clone();
 
     // start consuming incoming messages, otherwise they will back up.
+    // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
         loop {
             select! {
@@ -66,6 +69,7 @@ pub async fn main() {
         }
     });
 
+    // Second tokio task to listen to user input and outgoing chat messages.
     let join_handle2 = tokio::spawn(async move {
         // Set terminal to raw mode to allow reading
         // stdin one key at a time.
@@ -98,27 +102,32 @@ pub async fn main() {
                             .privmsg(channel_name2.to_owned(), input_buffer.to_owned())
                             .await
                             .unwrap();
+
+                        // Clear the input_buffer, clear the current line,
+                        // and call the carriage return ANSI escape
+                        // to return the cursor to the first column of the line.
                         input_buffer.clear();
                         write!(stdout, "{}\r", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
                     }
 
-                    // Else, print the pressed key:
+                    // Else, print the pressed key and add the input
+                    // to the input_buffer.
                     termion::event::Key::Char(user_input) => {
                         print!("{}", user_input);
                         input_buffer.push(user_input);
                         stdout.lock().flush().unwrap();
-                    },
+                    }
 
                     // On 'Backspace'
                     // Remove the last element from the input_buffer,
                     // move the cursor one column to the left,
-                    // and print a ' ' character to remove the
-                    // previous character. 
+                    // call ANSI escape sequence to clear from the cursor
+                    // to the end of the line.
                     termion::event::Key::Backspace => {
-                       input_buffer.pop();
-                       write!(stdout, "\x1b[1D\x1b[0K");
-                       stdout.lock().flush().unwrap();
+                        input_buffer.pop();
+                        write!(stdout, "\x1b[1D\x1b[0K");
+                        stdout.lock().flush().unwrap();
                     }
                     _ => {}
                 }
