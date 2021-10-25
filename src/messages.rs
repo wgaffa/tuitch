@@ -162,9 +162,13 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
     }
 }
 
-pub fn print_message(server_message: Option<String>, input_buffer: String) {
+pub fn print_message(server_message: Option<String>/*, input_buffer: String*/) {
     if let Some(message) = server_message {
-        print!("\x1b7\x1b[K{}\r\n\x1b8{}", message, input_buffer);
+        print!("{clear}\r{msg}\r\n{input}",
+            clear = termion::clear::CurrentLine,
+            msg = message,
+            input = ">", /*, input_buffer*/
+            );
     }
     stdout().flush().unwrap();
 }
