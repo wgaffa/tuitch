@@ -10,17 +10,18 @@ use crate::cli::Cli;
 use crate::messages::format_message;
 use crate::messages::print_message;
 use core::time;
-use std::io::stdout;
 use dotenv;
 use std::io;
+use std::io::stdout;
 use std::io::Write;
+use std::sync::Arc;
 use std::thread;
 use structopt::StructOpt;
 use termion;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 use termion::screen::AlternateScreen;
-use tokio::{select, sync::broadcast};
+use tokio::{select, sync::broadcast, sync::RwLock};
 use twitch_irc::login::StaticLoginCredentials;
 use twitch_irc::ClientConfig;
 use twitch_irc::SecureTCPTransport;
@@ -60,14 +61,19 @@ pub async fn main() {
     let client2 = client.clone();
     let channel_name2 = channel_name.clone();
 
+    let input_buffer_lock = Arc::new(RwLock::new(String::new()));
+    let mut input_buffer = input_buffer_lock.clone();
+
     // start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
         print!("{}", termion::cursor::Goto(1, 1));
+        input_buffer.read().await;
+
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
-                    // TODO: Once the input_buffer is accessible to this 
+                    // TODO: Once the input_buffer is accessible to this
                     // task, it needs to be passed in as the second
                     // argument to the print_message fn.
                     print_message(format_message(message));
@@ -90,7 +96,7 @@ pub async fn main() {
         // Input buffer; save user input per keystroke.
         // TODO: This variable needs to be accessible to
         // both tokio tasks.
-        let mut input_buffer = String::new();
+        input_buffer.write().await;
 
         loop {
             // Read input (if any)
@@ -115,7 +121,7 @@ pub async fn main() {
                             .unwrap();
 
                         // Print user input to the chat feed.
-                        print!("{}\r[You]: {}\n", termion::clear::CurrentLine, input_buffer);
+                        print!("{}\r[You]: {:?}\n", termion::clear::CurrentLine, input_buffer);
 
                         // Clear the input_buffer, clear the current line,
                         // and call the carriage return ANSI escape
@@ -140,9 +146,12 @@ pub async fn main() {
                     // to the end of the line.
                     termion::event::Key::Backspace => {
                         input_buffer.pop();
-                        write!(stdout, "{}{}",
+                        write!(
+                            stdout,
+                            "{}{}",
                             termion::cursor::Left(1),
-                            termion::clear::AfterCursor);
+                            termion::clear::AfterCursor
+                        );
                         stdout.lock().flush().unwrap();
                     }
                     _ => {}
