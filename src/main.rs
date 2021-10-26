@@ -63,6 +63,7 @@ pub async fn main() {
     // start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
+        print!("{}", termion::cursor::Goto(1, 1));
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
@@ -113,11 +114,14 @@ pub async fn main() {
                             .await
                             .unwrap();
 
+                        // Print user input to the chat feed.
+                        print!("{}\r[You]: {}\n", termion::clear::CurrentLine, input_buffer);
+
                         // Clear the input_buffer, clear the current line,
                         // and call the carriage return ANSI escape
                         // to return the cursor to the first column of the line.
                         input_buffer.clear();
-                        write!(stdout, "{}\r", termion::clear::CurrentLine);
+                        write!(stdout, "{}\r> ", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
                     }
 

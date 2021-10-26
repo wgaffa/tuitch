@@ -177,7 +177,7 @@ pub fn print_message(server_message: Option<String>/*, input_buffer: String*/) {
         print!("{clear}\r{msg}\r\n{input}",
             clear = termion::clear::CurrentLine,
             msg = message,
-            input = ">", /*, input_buffer*/
+            input = "> ", /*, input_buffer*/
             );
     }
     stdout().flush().unwrap();
