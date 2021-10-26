@@ -1,14 +1,10 @@
 #![allow(
-    dead_code,
     unused_variables,
-    unreachable_code,
     unused_must_use,
-    path_statements
 )]
 
 use crate::cli::Cli;
 use crate::messages::{format_message, print_message};
-use dotenv;
 use std::{io, io::stdout, io::Write, sync::Arc};
 use structopt::StructOpt;
 use termion::{input::TermRead, raw::IntoRawMode, screen::AlternateScreen, terminal_size};
@@ -24,19 +20,26 @@ mod messages;
 pub async fn main() {
     // Create alternate screen, restores terminal on drop.
     let screen = AlternateScreen::from(stdout());
+    let (x, y) = terminal_size().unwrap();
+    print!("{}", termion::cursor::Goto(1, y));
 
     // Load env file constants.
     dotenv::dotenv().ok();
 
-    // take command-line arguments for user and channel names.
+    // Take command-line arguments for user and channel names.
+    // Use RwLock to allow shared state.
     let args = Cli::from_args();
     let channel_name = Arc::new(RwLock::new(args.channel));
     let login_name = Arc::new(RwLock::new(args.user));
     let channel_name_read = Arc::clone(&channel_name);
     let login_name_read = Arc::clone(&login_name);
-    let input_buffer = Arc::new(RwLock::new(String::new()));
-    let input_buffer_read = Arc::clone(&input_buffer);
-    let input_buffer_write = Arc::clone(&input_buffer);
+
+    // Input-buffer for user's typed input and chat messages.
+    // This is a shared state to allow proper handling with incoming
+    // server messages while user input is in the console. 
+    let input_buffer_lock = Arc::new(RwLock::new(String::new()));
+    let input_buffer = Arc::clone(&input_buffer_lock);
+    let input_buffer2 = Arc::clone(&input_buffer_lock);
 
     // Login with CLI argument username.
     let config = ClientConfig::new_simple(StaticLoginCredentials::new(
@@ -56,16 +59,13 @@ pub async fn main() {
     let client2 = client.clone();
     let channel_name2 = channel_name.clone();
 
-    // start consuming incoming messages, otherwise they will back up.
+    // Start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
-        let (x, y) = terminal_size().ok().unwrap();
-        print!("{}", termion::cursor::Goto(1, y));
-
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
-                   print_message(format_message(message), input_buffer_read.read().await.to_string());
+                   print_message(format_message(message), input_buffer2.read().await.to_string());
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
@@ -82,10 +82,6 @@ pub async fn main() {
         // Use asynchronous stdin.
         let mut stdin = termion::async_stdin().keys();
 
-        // Input buffer; save user input per keystroke.
-        // TODO: This variable needs to be accessible to
-        // both tokio tasks.
-
         loop {
             // Read input (if any)
             let input = stdin.next();
@@ -93,7 +89,6 @@ pub async fn main() {
             // If a key was pressed
             if let Some(Ok(key)) = input {
                 match key {
-                    // TODO: Hook ctrl-c for "proper" shutdown.
                     // Exit if 'Esc' was pressed:
                     termion::event::Key::Esc => {
                         // Send message to receivers to end process.
@@ -106,7 +101,7 @@ pub async fn main() {
                         client2
                             .privmsg(
                                 channel_name_read.read().await.to_string().to_owned(),
-                                input_buffer_write.read().await.to_owned(),
+                                input_buffer.read().await.to_owned(),
                             )
                             .await
                             .unwrap();
@@ -120,9 +115,8 @@ pub async fn main() {
                         );
 
                         // Clear the input_buffer, clear the current line,
-                        // and call the carriage return ANSI escape
-                        // to return the cursor to the first column of the line.
-                        input_buffer_write.write().await.clear();
+                        // and return the cursor to the first column.
+                        input_buffer.write().await.clear();
                         write!(stdout, "{}\r> ", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
                     }
@@ -131,17 +125,16 @@ pub async fn main() {
                     // to the input_buffer.
                     termion::event::Key::Char(user_input) => {
                         print!("{}", user_input);
-                        input_buffer_write.write().await.push(user_input);
+                        input_buffer.write().await.push(user_input);
                         stdout.lock().flush().unwrap();
                     }
 
                     // On 'Backspace'
                     // Remove the last element from the input_buffer,
                     // move the cursor one column to the left,
-                    // call ANSI escape sequence to clear from the cursor
-                    // to the end of the line.
+                    // clear all items after the cursor.
                     termion::event::Key::Backspace => {
-                        input_buffer_write.write().await.pop();
+                        input_buffer.write().await.pop();
                         write!(
                             stdout,
                             "{}{}",

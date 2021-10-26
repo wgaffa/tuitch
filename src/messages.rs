@@ -1,8 +1,5 @@
 use std::io::{stdout, Write};
-use twitch_irc::message::ClearChatAction;
-use twitch_irc::message::HostTargetAction;
-use twitch_irc::message::ServerMessage;
-use twitch_irc::message::UserNoticeEvent;
+use twitch_irc::message::{ClearChatAction, HostTargetAction, ServerMessage, UserNoticeEvent};
 
 // TODO: use owo-colors crate for color and style formatting.
 
