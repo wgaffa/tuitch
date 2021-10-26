@@ -163,7 +163,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 }
 
 pub fn print_message(server_message: Option<String>, input_buffer: String) {
-   if let Some(message) = server_message {
+    if let Some(message) = server_message {
         print!(
             "{clear}\r{msg}\r\n",
             clear = termion::clear::CurrentLine,

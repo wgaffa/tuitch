@@ -7,25 +7,15 @@
 )]
 
 use crate::cli::Cli;
-use crate::messages::format_message;
-use crate::messages::print_message;
-use core::time;
+use crate::messages::{format_message, print_message};
 use dotenv;
-use std::io;
-use std::io::stdout;
-use std::io::Write;
-use std::sync::Arc;
-use std::thread;
+use std::{io, io::stdout, io::Write, sync::Arc};
 use structopt::StructOpt;
-use termion;
-use termion::input::TermRead;
-use termion::raw::IntoRawMode;
-use termion::screen::AlternateScreen;
+use termion::{input::TermRead, raw::IntoRawMode, screen::AlternateScreen, terminal_size};
 use tokio::{select, sync::broadcast, sync::RwLock};
-use twitch_irc::login::StaticLoginCredentials;
-use twitch_irc::ClientConfig;
-use twitch_irc::SecureTCPTransport;
-use twitch_irc::TwitchIRCClient;
+use twitch_irc::{
+    login::StaticLoginCredentials, ClientConfig, SecureTCPTransport, TwitchIRCClient,
+};
 
 mod cli;
 mod messages;
@@ -40,12 +30,17 @@ pub async fn main() {
 
     // take command-line arguments for user and channel names.
     let args = Cli::from_args();
-    let channel_name: String = args.channel;
-    let login_name: String = args.user;
+    let channel_name = Arc::new(RwLock::new(args.channel));
+    let login_name = Arc::new(RwLock::new(args.user));
+    let channel_name_read = Arc::clone(&channel_name);
+    let login_name_read = Arc::clone(&login_name);
+    let input_buffer = Arc::new(RwLock::new(String::new()));
+    let input_buffer_read = Arc::clone(&input_buffer);
+    let input_buffer_write = Arc::clone(&input_buffer);
 
     // Login with CLI argument username.
     let config = ClientConfig::new_simple(StaticLoginCredentials::new(
-        login_name,
+        login_name.read().await.to_string(),
         Some(dotenv::var("OAUTH_TOKEN").unwrap()),
     ));
 
@@ -61,23 +56,16 @@ pub async fn main() {
     let client2 = client.clone();
     let channel_name2 = channel_name.clone();
 
-    let input_buffer = Arc::new(RwLock::new(String::new()));
-    let input_buffer_read = Arc::clone(&input_buffer);
-    let input_buffer_write = Arc::clone(&input_buffer);
-
     // start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
-        print!("{}", termion::cursor::Goto(1, 1));
-        input_buffer_read.read().await;
+        let (x, y) = terminal_size().ok().unwrap();
+        print!("{}", termion::cursor::Goto(1, y));
 
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
-                    // TODO: Once the input_buffer is accessible to this
-                    // task, it needs to be passed in as the second
-                    // argument to the print_message fn.
-                    print_message(format_message(message), input_buffer_read.read().await.to_string());
+                   print_message(format_message(message), input_buffer_read.read().await.to_string());
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
@@ -97,7 +85,6 @@ pub async fn main() {
         // Input buffer; save user input per keystroke.
         // TODO: This variable needs to be accessible to
         // both tokio tasks.
-        &input_buffer_write.write().await;
 
         loop {
             // Read input (if any)
@@ -117,12 +104,20 @@ pub async fn main() {
                     // Send typed user input when 'Enter' key is pressed.
                     termion::event::Key::Char('\n') => {
                         client2
-                            .privmsg(channel_name2.to_owned(), input_buffer_write.read().await.to_owned())
+                            .privmsg(
+                                channel_name_read.read().await.to_string().to_owned(),
+                                input_buffer_write.read().await.to_owned(),
+                            )
                             .await
                             .unwrap();
 
                         // Print user input to the chat feed.
-                        print!("{}\r[You]: {}\n", termion::clear::CurrentLine, input_buffer.read().await.to_string());
+                        print!(
+                            "{}\r[{}]: {}\n",
+                            termion::clear::CurrentLine,
+                            login_name_read.read().await.to_string(),
+                            input_buffer.read().await.to_string()
+                        );
 
                         // Clear the input_buffer, clear the current line,
                         // and call the carriage return ANSI escape
@@ -158,7 +153,6 @@ pub async fn main() {
                     _ => {}
                 }
             }
-            thread::sleep(time::Duration::from_millis(50));
         }
     });
 
@@ -168,7 +162,7 @@ pub async fn main() {
     // that do not exist and incorrect user input.
 
     // Join channel chat from argument string:
-    client.join(channel_name);
+    client.join(channel_name.read().await.to_string());
 
     // keep the tokio executor alive.
     // If you return instead of waiting,
