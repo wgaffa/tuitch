@@ -61,14 +61,15 @@ pub async fn main() {
     let client2 = client.clone();
     let channel_name2 = channel_name.clone();
 
-    let input_buffer_lock = Arc::new(RwLock::new(String::new()));
-    let mut input_buffer = input_buffer_lock.clone();
+    let input_buffer = Arc::new(RwLock::new(String::new()));
+    let input_buffer_read = Arc::clone(&input_buffer);
+    let input_buffer_write = Arc::clone(&input_buffer);
 
     // start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
     let join_handle = tokio::spawn(async move {
         print!("{}", termion::cursor::Goto(1, 1));
-        input_buffer.read().await;
+        input_buffer_read.read().await;
 
         loop {
             select! {
@@ -76,7 +77,7 @@ pub async fn main() {
                     // TODO: Once the input_buffer is accessible to this
                     // task, it needs to be passed in as the second
                     // argument to the print_message fn.
-                    print_message(format_message(message));
+                    print_message(format_message(message), input_buffer_read.read().await.to_string());
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
@@ -96,7 +97,7 @@ pub async fn main() {
         // Input buffer; save user input per keystroke.
         // TODO: This variable needs to be accessible to
         // both tokio tasks.
-        input_buffer.write().await;
+        &input_buffer_write.write().await;
 
         loop {
             // Read input (if any)
@@ -116,17 +117,17 @@ pub async fn main() {
                     // Send typed user input when 'Enter' key is pressed.
                     termion::event::Key::Char('\n') => {
                         client2
-                            .privmsg(channel_name2.to_owned(), input_buffer.to_owned())
+                            .privmsg(channel_name2.to_owned(), input_buffer_write.read().await.to_owned())
                             .await
                             .unwrap();
 
                         // Print user input to the chat feed.
-                        print!("{}\r[You]: {:?}\n", termion::clear::CurrentLine, input_buffer);
+                        print!("{}\r[You]: {}\n", termion::clear::CurrentLine, input_buffer.read().await.to_string());
 
                         // Clear the input_buffer, clear the current line,
                         // and call the carriage return ANSI escape
                         // to return the cursor to the first column of the line.
-                        input_buffer.clear();
+                        input_buffer_write.write().await.clear();
                         write!(stdout, "{}\r> ", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
                     }
@@ -135,7 +136,7 @@ pub async fn main() {
                     // to the input_buffer.
                     termion::event::Key::Char(user_input) => {
                         print!("{}", user_input);
-                        input_buffer.push(user_input);
+                        input_buffer_write.write().await.push(user_input);
                         stdout.lock().flush().unwrap();
                     }
 
@@ -145,7 +146,7 @@ pub async fn main() {
                     // call ANSI escape sequence to clear from the cursor
                     // to the end of the line.
                     termion::event::Key::Backspace => {
-                        input_buffer.pop();
+                        input_buffer_write.write().await.pop();
                         write!(
                             stdout,
                             "{}{}",
