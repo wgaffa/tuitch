@@ -134,14 +134,17 @@ pub async fn main() {
                     // move the cursor one column to the left,
                     // clear all items after the cursor.
                     termion::event::Key::Backspace => {
-                        input_buffer.write().await.pop();
-                        write!(
-                            stdout,
-                            "{}{}",
-                            termion::cursor::Left(1),
-                            termion::clear::AfterCursor
-                        );
-                        stdout.lock().flush().unwrap();
+                        if input_buffer.read().await.len() == 0 {}
+                        else {
+                            input_buffer.write().await.pop();
+                            write!(
+                                stdout,
+                                "{}{}",
+                                termion::cursor::Left(1),
+                                termion::clear::AfterCursor
+                            );
+                            stdout.lock().flush().unwrap();
+                        }
                     }
                     _ => {}
                 }

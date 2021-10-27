@@ -160,6 +160,13 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 }
 
 pub fn print_message(server_message: Option<String>, input_buffer: String) {
+    // When a server message is printed, the user's current input
+    // and the UI need to be taken into account. The current line must
+    // be cleared first, and carraige return called. The message is 
+    // then printed, and carraige return and newline are called.
+    // If the user had any unsent input, that is saved and printed
+    // back to the console, then the cursor is restored to it's previous 
+    // position.
     if let Some(message) = server_message {
         print!(
             "{clear}\r{msg}\r\n",
