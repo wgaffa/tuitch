@@ -20,7 +20,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
                 b: 255,
             });
             Some(format!(
-                "{}: {}",
+                "{}: {}\n",
                 prvmsg.sender.name.color(Rgb(
                     user_name_color.r,
                     user_name_color.g,
@@ -170,7 +170,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
         ServerMessage::GlobalUserState(_) => Some(format!("Login successful!")),
         ServerMessage::Part(_) => Some(format!("Departed chat.")),
         ServerMessage::Notice(notice) => Some(format!("{}", notice.message_text)),
-        ServerMessage::Join(join) => Some(format!("Joined {}'s chat!", join.channel_login)),
+        ServerMessage::Join(join) => Some(format!("Joined {}'s chat!\n\n", join.channel_login)),
 
         // Any other events that do not need to be verbose
         _ => None,
