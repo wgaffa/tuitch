@@ -1,5 +1,8 @@
+use owo_colors::{OwoColorize, Rgb};
 use std::io::{stdout, Write};
-use twitch_irc::message::{ClearChatAction, HostTargetAction, ServerMessage, UserNoticeEvent};
+use twitch_irc::message::{
+    ClearChatAction, HostTargetAction, RGBColor, ServerMessage, UserNoticeEvent,
+};
 
 // TODO: Owo-colors text color and style formatting.
 // TODO: Look into adding emotes.
@@ -10,12 +13,18 @@ use twitch_irc::message::{ClearChatAction, HostTargetAction, ServerMessage, User
 pub fn format_message(message: ServerMessage) -> Option<String> {
     match message {
         // User chat messages:
-        ServerMessage::Privmsg(prvmsg) => Some(format!(
-            "{} [{}]: {}\n",
-            prvmsg.server_timestamp.format("%H:%M"),
-            prvmsg.sender.name,
-            prvmsg.message_text
-        )),
+        ServerMessage::Privmsg(prvmsg) => {
+            let user_name_color = prvmsg.name_color.unwrap_or(RGBColor { r: 0, g: 0, b: 0 });
+            Some(format!(
+                "{}: {}",
+                prvmsg.sender.name.color(Rgb(
+                    user_name_color.r,
+                    user_name_color.g,
+                    user_name_color.b
+                )),
+                prvmsg.message_text
+            ))
+        }
 
         // User time-outs, bans, and a cleared chat history messages:
         ServerMessage::ClearChat(clearchat) => match clearchat.action {
@@ -34,7 +43,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
             ClearChatAction::ChatCleared => Some(format!("Chat has been cleared.")),
         },
 
-        // Channel-hosting 
+        // Channel-hosting
         ServerMessage::HostTarget(hosttargetmessage) => match hosttargetmessage.action {
             HostTargetAction::HostModeOn {
                 hosted_channel_login,
@@ -42,7 +51,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
             } => {
                 let viewer_count = viewer_count.unwrap_or(0);
                 Some(format!(
-                    "Hosted {} with {:#?} users",
+                    "Hosted {} with {} users",
                     hosted_channel_login, viewer_count
                 ))
             }
@@ -166,9 +175,9 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 
 pub fn print_message(server_message: Option<String>, input_buffer: String) {
     // When a server message is printed, the user's current input
-    // and the UI need to be taken into account. 
+    // and the UI need to be taken into account.
     //
-    // The current line must be cleared first, and carraige return called. 
+    // The current line must be cleared first, and carraige return called.
     // The message is then printed, and carraige return and newline are called.
     // If the user had any unsent input, that is saved and printed
     // back to the console, then the cursor is restored to it's previous

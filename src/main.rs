@@ -112,7 +112,7 @@ pub async fn main() {
                             .unwrap();
 
                         print!(
-                            "{}\r[{}]: {}\n\n",
+                            "{}\r[{}]: {}\n",
                             termion::clear::CurrentLine,
                             login_name_read.read().await.to_string(),
                             input_buffer.read().await.to_string()
