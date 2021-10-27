@@ -14,7 +14,11 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
     match message {
         // User chat messages:
         ServerMessage::Privmsg(prvmsg) => {
-            let user_name_color = prvmsg.name_color.unwrap_or(RGBColor { r: 0, g: 0, b: 0 });
+            let user_name_color = prvmsg.name_color.unwrap_or(RGBColor {
+                r: 255,
+                g: 255,
+                b: 255,
+            });
             Some(format!(
                 "{}: {}",
                 prvmsg.sender.name.color(Rgb(
