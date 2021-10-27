@@ -61,6 +61,7 @@ pub async fn main() {
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
+    // TwitchIRCClient is thread safe, clone() can be called here.
     let client2 = client.clone();
 
     // Start consuming incoming messages, otherwise they will back up.
@@ -111,7 +112,7 @@ pub async fn main() {
                             .unwrap();
 
                         print!(
-                            "{}\r[{}]: {}\n",
+                            "{}\r[{}]: {}\n\n",
                             termion::clear::CurrentLine,
                             login_name_read.read().await.to_string(),
                             input_buffer.read().await.to_string()
