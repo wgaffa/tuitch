@@ -16,7 +16,11 @@ mod messages;
 #[tokio::main]
 pub async fn main() {
     // TODO: Login credential input.
+    // TODO: Add another tokio task for ctrl-c handling.
+    // TODO: Need error-handling for channels
+    // that do not exist and incorrect user input.
     // TODO: Possible tabs for multiple chats?
+    //
     // Create alternate screen, restores terminal on drop.
     let screen = AlternateScreen::from(stdout());
     let (x, y) = terminal_size().unwrap();
@@ -27,6 +31,9 @@ pub async fn main() {
 
     // Take command-line arguments for user and channel names.
     // Use RwLock to allow shared state.
+    //
+    // TODO: Convert this functionality from CLI to fit within
+    // the TUI. More streamlined user login and channel joining.
     let args = Cli::from_args();
     let channel_name = Arc::new(RwLock::new(args.channel));
     let login_name = Arc::new(RwLock::new(args.user));
@@ -54,11 +61,11 @@ pub async fn main() {
     let (mut incoming_messages, client) =
         TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(config);
 
-    // TODO: This is bad, need to change. But it works.
     let client2 = client.clone();
 
     // Start consuming incoming messages, otherwise they will back up.
-    // First tokio task to listen for incoming server messages.
+    // First tokio task to listen for incoming server messages
+    // and format them as needed before printing them to the console.
     let join_handle = tokio::spawn(async move {
         loop {
             select! {
@@ -81,13 +88,10 @@ pub async fn main() {
         let mut stdin = termion::async_stdin().keys();
 
         loop {
-            // Read input (if any)
             let input = stdin.next();
 
-            // If a key was pressed
             if let Some(Ok(key)) = input {
                 match key {
-                    // Exit if 'Esc' was pressed:
                     termion::event::Key::Esc => {
                         // Send message to receivers to end process.
                         shutdown_tx.send(()).ok();
@@ -95,6 +99,8 @@ pub async fn main() {
                     }
 
                     // Send typed user input when 'Enter' key is pressed.
+                    // Clear the input_buffer, clear the current line,
+                    // and return the cursor to the first column.
                     termion::event::Key::Char('\n') => {
                         client2
                             .privmsg(
@@ -104,7 +110,6 @@ pub async fn main() {
                             .await
                             .unwrap();
 
-                        // Print user input to the chat feed.
                         print!(
                             "{}\r[{}]: {}\n",
                             termion::clear::CurrentLine,
@@ -112,8 +117,6 @@ pub async fn main() {
                             input_buffer.read().await.to_string()
                         );
 
-                        // Clear the input_buffer, clear the current line,
-                        // and return the cursor to the first column.
                         input_buffer.write().await.clear();
                         write!(stdout, "{}\r> ", termion::clear::CurrentLine);
                         stdout.lock().flush().unwrap();
@@ -131,9 +134,11 @@ pub async fn main() {
                     // Remove the last element from the input_buffer,
                     // move the cursor one column to the left,
                     // clear all items after the cursor.
+                    //
+                    // If the input_buffer is empty, backspace
+                    // does nothing.
                     termion::event::Key::Backspace => {
-                        if input_buffer.read().await.len() == 0 {
-                        } else {
+                        if !input_buffer.read().await.is_empty() {
                             input_buffer.write().await.pop();
                             write!(
                                 stdout,
@@ -150,15 +155,9 @@ pub async fn main() {
         }
     });
 
-    // TODO: Add another tokio task for ctrl-c handling.
-
-    // TODO: Need error-handling for channels
-    // that do not exist and incorrect user input.
-
-    // Join channel chat from argument string:
     client.join(channel_name.read().await.to_string());
 
-    // keep the tokio executor alive.
+    // Keep the tokio executor alive.
     // If you return instead of waiting,
     // the background task will exit.
     futures::join!(join_handle, join_handle2);

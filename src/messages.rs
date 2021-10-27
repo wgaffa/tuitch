@@ -5,10 +5,11 @@ use twitch_irc::message::{ClearChatAction, HostTargetAction, ServerMessage, User
 // TODO: Look into adding emotes.
 // TODO: Text alignment.
 // TODO: Window sizing.
+// TODO: Scrolling through chat history.
 
 pub fn format_message(message: ServerMessage) -> Option<String> {
     match message {
-        // Format and print user chat messages:
+        // User chat messages:
         ServerMessage::Privmsg(prvmsg) => Some(format!(
             "{} [{}]: {}\n",
             prvmsg.server_timestamp.format("%H:%M"),
@@ -33,7 +34,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
             ClearChatAction::ChatCleared => Some(format!("Chat has been cleared.")),
         },
 
-        // Channel-hosting messages:
+        // Channel-hosting 
         ServerMessage::HostTarget(hosttargetmessage) => match hosttargetmessage.action {
             HostTargetAction::HostModeOn {
                 hosted_channel_login,
@@ -150,7 +151,8 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
         // Simple server messages related to user and moderator actions and
         // server-side messages:
 
-        //TODO: Look into and proper message removal.
+        // TODO: Look into and proper message removal.
+        // Will probably need to buffer n incoming messages.
         ServerMessage::ClearMsg(_) => Some(format!("Message deleted.")),
         ServerMessage::GlobalUserState(_) => Some(format!("Login successful!")),
         ServerMessage::Part(_) => Some(format!("Departed chat.")),
@@ -164,9 +166,10 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
 
 pub fn print_message(server_message: Option<String>, input_buffer: String) {
     // When a server message is printed, the user's current input
-    // and the UI need to be taken into account. The current line must
-    // be cleared first, and carraige return called. The message is
-    // then printed, and carraige return and newline are called.
+    // and the UI need to be taken into account. 
+    //
+    // The current line must be cleared first, and carraige return called. 
+    // The message is then printed, and carraige return and newline are called.
     // If the user had any unsent input, that is saved and printed
     // back to the console, then the cursor is restored to it's previous
     // position.
