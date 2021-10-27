@@ -1,7 +1,4 @@
-#![allow(
-    unused_variables,
-    unused_must_use,
-)]
+#![allow(unused_variables, unused_must_use)]
 
 use crate::cli::Cli;
 use crate::messages::{format_message, print_message};
@@ -18,6 +15,8 @@ mod messages;
 
 #[tokio::main]
 pub async fn main() {
+    // TODO: Login credential input.
+    // TODO: Possible tabs for multiple chats?
     // Create alternate screen, restores terminal on drop.
     let screen = AlternateScreen::from(stdout());
     let (x, y) = terminal_size().unwrap();
@@ -36,7 +35,7 @@ pub async fn main() {
 
     // Input-buffer for user's typed input and chat messages.
     // This is a shared state to allow proper handling with incoming
-    // server messages while user input is in the console. 
+    // server messages while user input is in the console.
     let input_buffer_lock = Arc::new(RwLock::new(String::new()));
     let input_buffer = Arc::clone(&input_buffer_lock);
     let input_buffer2 = Arc::clone(&input_buffer_lock);
@@ -57,7 +56,6 @@ pub async fn main() {
 
     // TODO: This is bad, need to change. But it works.
     let client2 = client.clone();
-    let channel_name2 = channel_name.clone();
 
     // Start consuming incoming messages, otherwise they will back up.
     // First tokio task to listen for incoming server messages.
@@ -134,8 +132,8 @@ pub async fn main() {
                     // move the cursor one column to the left,
                     // clear all items after the cursor.
                     termion::event::Key::Backspace => {
-                        if input_buffer.read().await.len() == 0 {}
-                        else {
+                        if input_buffer.read().await.len() == 0 {
+                        } else {
                             input_buffer.write().await.pop();
                             write!(
                                 stdout,
