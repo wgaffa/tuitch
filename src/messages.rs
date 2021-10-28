@@ -4,11 +4,12 @@ use twitch_irc::message::{
     ClearChatAction, HostTargetAction, RGBColor, ServerMessage, UserNoticeEvent,
 };
 
-// TODO: Owo-colors text color and style formatting.
 // TODO: Look into adding emotes.
 // TODO: Text alignment.
 // TODO: Window sizing.
 // TODO: Scrolling through chat history.
+// TODO: Fix non-user message formatting.
+// TODO: Look into chat replies from users.
 
 pub fn format_message(message: ServerMessage) -> Option<String> {
     match message {
@@ -20,7 +21,8 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
                 b: 255,
             });
             Some(format!(
-                " {}: {}\n",
+                " {} {}: {}\n",
+                prvmsg.server_timestamp.format("%H%M").dimmed(),
                 prvmsg.sender.name.bold().color(Rgb(
                     user_name_color.r,
                     user_name_color.g,
@@ -63,6 +65,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
         },
 
         // Event messages, raids, subs:
+        // TODO: Fix sub tier text
         ServerMessage::UserNotice(usernotice) => match usernotice.event {
             UserNoticeEvent::SubOrResub {
                 is_resub,
