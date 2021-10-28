@@ -20,8 +20,8 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
                 b: 255,
             });
             Some(format!(
-                "{}: {}\n",
-                prvmsg.sender.name.color(Rgb(
+                " {}: {}\n",
+                prvmsg.sender.name.bold().color(Rgb(
                     user_name_color.r,
                     user_name_color.g,
                     user_name_color.b
