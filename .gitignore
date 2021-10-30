@@ -1,2 +1,5 @@
 target/
 .env
+Config.toml
+config.toml
+debug.txt
