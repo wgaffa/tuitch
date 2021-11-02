@@ -21,7 +21,6 @@ pub async fn main() -> std::io::Result<()> {
     // that do not exist and incorrect user input.
 
     let config_path = "Config.toml";
-    let client_config = set_client_config(config_path).await;
     let user_config = get_client_config(config_path).await;
 
     let current_channel = Arc::new(RwLock::new(String::new()));
@@ -48,8 +47,10 @@ pub async fn main() -> std::io::Result<()> {
 
     // The TwitchIRCClient is built with either the default (read-only) or Twitch
     // login credentials (username & OAuth token pair).
-    let (mut incoming_messages, client) =
-        TwitchIRCClient::<SecureTCPTransport, StaticLoginCredentials>::new(client_config);
+    let (mut incoming_messages, client) = TwitchIRCClient::<
+        SecureTCPTransport,
+        StaticLoginCredentials,
+    >::new(set_client_config(config_path).await);
 
     // TwitchIRCClient is thread safe, clone() can be called here.
     // client2 is used to send user messages to the Twitch servers.
@@ -122,6 +123,7 @@ pub async fn main() -> std::io::Result<()> {
                                 )
                                 .await;
                             } else {
+                                // commands are not printed to the screen
                                 print!("{}\r", termion::clear::CurrentLine,);
                             }
 
@@ -162,7 +164,11 @@ pub async fn main() -> std::io::Result<()> {
             select! {
                 // if a command ':' is found in a sent input buffer,
                 // call run_command to parse the input and handle the command
-                Ok(command) = command_rx.recv() => run_command(Arc::clone(&input_buffer_lock), Arc::clone(&current_channel_read), &client).await
+                Ok(command) = command_rx.recv() => run_command(
+                    Arc::clone(&input_buffer_lock), 
+                    Arc::clone(&current_channel_read), 
+                    &client
+                    ).await
             };
         }
     });

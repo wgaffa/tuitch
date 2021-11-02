@@ -1,3 +1,4 @@
+use chrono::{DateTime, Timelike, Utc};
 use owo_colors::{OwoColorize, Rgb};
 use std::io::{stdout, Write};
 use twitch_irc::message::{
@@ -201,9 +202,12 @@ pub async fn print_message(server_message: Option<String>, input_buffer: String)
 }
 
 pub async fn print_user_message(username: String, input_buffer: String) {
+    let now: DateTime<Utc> = Utc::now();
     print!(
-        "{}\r {}: {}\n\n",
+        "{}\r {}{} {}: {}\n\n",
         termion::clear::CurrentLine,
+        now.hour().dimmed(),
+        now.minute().dimmed(),
         username.bold(),
         input_buffer
     );
