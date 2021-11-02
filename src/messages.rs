@@ -11,7 +11,7 @@ use twitch_irc::message::{
 // TODO: Fix non-user message formatting.
 // TODO: Look into chat replies from users.
 
-pub fn format_message(message: ServerMessage) -> Option<String> {
+pub async fn format_message(message: ServerMessage) -> Option<String> {
     match message {
         // User chat messages:
         ServerMessage::Privmsg(prvmsg) => {
@@ -180,7 +180,7 @@ pub fn format_message(message: ServerMessage) -> Option<String> {
     }
 }
 
-pub fn print_message(server_message: Option<String>, input_buffer: String) {
+pub async fn print_message(server_message: Option<String>, input_buffer: String) {
     // When a server message is printed, the user's current input
     // and the UI need to be taken into account.
     //
@@ -198,4 +198,13 @@ pub fn print_message(server_message: Option<String>, input_buffer: String) {
         print!("> {}", input_buffer);
     }
     stdout().flush().unwrap();
+}
+
+pub async fn print_user_message(username: String, input_buffer: String) {
+    print!(
+        "{}\r {}: {}\n\n",
+        termion::clear::CurrentLine,
+        username.bold(),
+        input_buffer
+    );
 }
