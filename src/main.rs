@@ -4,6 +4,7 @@ use crate::commands::run_command;
 use crate::messages::{format_message, print_message, send_user_message};
 use crate::user_config::{get_client_config, set_client_config};
 use crate::user_interface::reset_screen;
+use owo_colors::OwoColorize;
 use std::{io::stdout, io::Write, sync::Arc};
 use termion::{input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
 use tokio::{select, sync::broadcast, sync::RwLock};
@@ -34,6 +35,7 @@ pub async fn main() -> std::io::Result<()> {
     let user_name = Arc::new(RwLock::new(user_config.username));
     let current_channel_read = Arc::clone(&current_channel);
     let user_name_read = Arc::clone(&user_name);
+    let placeholder: &str = "Enter a message or command";
 
     // Input-buffer for user's typed input and chat messages.
     // This is a shared state to allow proper handling with incoming
@@ -74,7 +76,15 @@ pub async fn main() -> std::io::Result<()> {
         loop {
             select! {
                 Some(message) = incoming_messages.recv() => {
-                   print_message(format_message(message).await, input_buffer2.read().await.to_string()).await;
+                    print_message(format_message(message).await, input_buffer2.read().await.to_string()).await;
+                    if input_buffer2.read().await.is_empty() {
+                        print!(
+                            "\r> {}\r{}",
+                            &placeholder.dimmed(),
+                            termion::cursor::Right(2)
+                           );
+                        stdout().lock().flush();
+                       }
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
@@ -115,12 +125,22 @@ pub async fn main() -> std::io::Result<()> {
                                 )
                                 .await;
                             }
+                            write!(
+                                stdout,
+                                "\r> {}\r{}",
+                                &placeholder.dimmed(),
+                                termion::cursor::Right(2)
+                            );
                         }
                     }
                     termion::event::Key::Char(user_input) => {
                         // write user input to the console
                         // and save it to input_buffer
-                        write!(stdout, "{}", user_input);
+                        if !input_buffer.read().await.is_empty() {
+                            write!(stdout, "{}", user_input);
+                        } else {
+                            write!(stdout, "{}\r> {}", termion::clear::CurrentLine, user_input);
+                        }
                         input_buffer.write().await.push(user_input);
                     }
                     termion::event::Key::Backspace => {
@@ -134,6 +154,14 @@ pub async fn main() -> std::io::Result<()> {
                                 termion::cursor::Left(1),
                                 termion::clear::AfterCursor
                             );
+                            if input_buffer.read().await.is_empty() {
+                                write!(
+                                    stdout,
+                                    "\r> {}\r{}",
+                                    &placeholder.dimmed(),
+                                    termion::cursor::Right(2)
+                                );
+                            }
                         }
                     }
                     _ => {}

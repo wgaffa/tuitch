@@ -1,5 +1,5 @@
+use crate::user_config::{create_config_file, UserConfig};
 use crate::user_interface::reset_screen;
-use crate::user_config::{UserConfig, create_config_file};
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 use twitch_irc::{
@@ -23,16 +23,21 @@ pub async fn run_command(
             buffer.clear();
             reset_screen().await;
         }
-//        Some(":login") => {
-//            if let Some(username) = command.next() {
-//                let oauth_token = command.next();
-//                login_command(username.to_string(), oauth_token.unwrap().to_string(), &client).await;
-//            }
-//        }
+        //        Some(":login") => {
+        //            if let Some(username) = command.next() {
+        //                let oauth_token = command.next();
+        //                login_command(username.to_string(), oauth_token.unwrap().to_string(), &client).await;
+        //            }
+        //        }
         Some(":credentials") => {
             if let Some(username) = command.next() {
                 let oauth_token = command.next();
-                credentials_command(username.to_string(), oauth_token.unwrap().to_string(), &config_path).await;
+                credentials_command(
+                    username.to_string(),
+                    oauth_token.unwrap().to_string(),
+                    &config_path,
+                )
+                .await;
             }
             buffer.clear();
             reset_screen().await;
@@ -59,7 +64,7 @@ pub async fn join_command(
 //     token: String,
 //     client: &TwitchIRCClient<SecureTCPTransport, StaticLoginCredentials>,
 // ) {
-// 
+//
 // }
 
 pub async fn credentials_command(new_username: String, token: String, config_path: &str) {
