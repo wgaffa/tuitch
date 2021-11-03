@@ -50,7 +50,7 @@ pub async fn main() -> std::io::Result<()> {
     let (mut incoming_messages, client) = TwitchIRCClient::<
         SecureTCPTransport,
         StaticLoginCredentials,
-    >::new(set_client_config(config_path).await);
+    >::new(set_client_config(config_path));
 
     // TwitchIRCClient is thread safe, clone() can be called here.
     // client2 is used to send user messages to the Twitch servers.
@@ -87,7 +87,7 @@ pub async fn main() -> std::io::Result<()> {
 
         loop {
             let input = stdin.next();
-
+            let first_char = input_buffer.read().await.chars().nth(0);
             if let Some(Ok(key)) = input {
                 match key {
                     termion::event::Key::Esc => {
@@ -97,48 +97,41 @@ pub async fn main() -> std::io::Result<()> {
                     }
 
                     termion::event::Key::Char('\n') => {
-                        // Check the first char in the buffer for a ':',
-                        // if a ':' is found, it is a command, which is
-                        // handled in run_command.
-                        let first_char = input_buffer.read().await.chars().nth(0);
-                        if first_char == Some(':') {
-                            // If the entered input buffer starts with a ':'
-                            // then a command function is executed.
-                            command_tx.send(()).ok();
-                        }
-
                         if !input_buffer.read().await.is_empty() {
-                            client2
-                                .privmsg(
-                                    current_channel.read().await.to_owned(),
-                                    input_buffer.read().await.to_owned(),
-                                )
-                                .await
-                                .unwrap();
-
-                            if first_char != Some(':') {
+                            if first_char == Some(':') {
+                                // If the entered input buffer starts with a ':'
+                                // then the run_command function is executed,
+                                // parsing the command and running its logic.
+                                command_tx.send(()).ok();
+                            } else {
+                                // if the input_buffer does not begin with a ':',
+                                // it's treated as a normal chat message, which is 
+                                // sent to the Twitch servers.
+                                client2
+                                    .privmsg(
+                                        current_channel.read().await.to_owned(),
+                                        input_buffer.read().await.to_owned(),
+                                    )
+                                    .await
+                                    .unwrap();
+                                // Sent messages have to be formatted and printed
+                                // to the terminal manually, twitch_irc doesn't 
+                                // seem to see these as incoming messages.
                                 print_user_message(
-                                    user_name.read().await.to_string(),
+                                    user_name.read().await.as_str(),
                                     input_buffer.read().await.to_string(),
                                 )
                                 .await;
-                            } else {
-                                // commands are not printed to the screen
-                                print!("{}\r", termion::clear::CurrentLine,);
+                                input_buffer.write().await.clear();
+                                print!("{}\r> ", termion::clear::CurrentLine);
                             }
-
-                            input_buffer.write().await.clear();
-                            print!("{}\r> ", termion::clear::CurrentLine);
-                            stdout.lock().flush().unwrap();
                         }
                     }
-
                     termion::event::Key::Char(user_input) => {
                         // write user input to the console
                         // and save it to input_buffer
                         write!(stdout, "{}", user_input);
                         input_buffer.write().await.push(user_input);
-                        stdout.lock().flush().unwrap();
                     }
 
                     termion::event::Key::Backspace => {
@@ -150,11 +143,11 @@ pub async fn main() -> std::io::Result<()> {
                                 termion::cursor::Left(1),
                                 termion::clear::AfterCursor
                             );
-                            stdout.lock().flush().unwrap();
                         }
                     }
                     _ => {}
                 }
+                stdout.lock().flush().unwrap();
             }
         }
     });
@@ -165,8 +158,8 @@ pub async fn main() -> std::io::Result<()> {
                 // if a command ':' is found in a sent input buffer,
                 // call run_command to parse the input and handle the command
                 Ok(command) = command_rx.recv() => run_command(
-                    Arc::clone(&input_buffer_lock), 
-                    Arc::clone(&current_channel_read), 
+                    Arc::clone(&input_buffer_lock),
+                    Arc::clone(&current_channel_read),
                     &client
                     ).await
             };

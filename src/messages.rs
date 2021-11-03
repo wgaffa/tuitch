@@ -23,7 +23,7 @@ pub async fn format_message(message: ServerMessage) -> Option<String> {
             });
             Some(format!(
                 " {} {}: {}\n",
-                prvmsg.server_timestamp.format("%H%M").dimmed(),
+                prvmsg.server_timestamp.format("%H:%M").dimmed(),
                 prvmsg.sender.name.bold().color(Rgb(
                     user_name_color.r,
                     user_name_color.g,
@@ -201,10 +201,10 @@ pub async fn print_message(server_message: Option<String>, input_buffer: String)
     stdout().flush().unwrap();
 }
 
-pub async fn print_user_message(username: String, input_buffer: String) {
+pub async fn print_user_message(username: &str, input_buffer: String) {
     let now: DateTime<Utc> = Utc::now();
     print!(
-        "{}\r {}{} {}: {}\n\n",
+        "{}\r {}:{} {}: {}\n\n",
         termion::clear::CurrentLine,
         now.hour().dimmed(),
         now.minute().dimmed(),

@@ -18,7 +18,6 @@ pub async fn run_command(
             if let Some(channel) = command.next() {
                 join_command(channel.to_string(), current_channel, &client).await;
             }
-            // TODO: Maybe abstract this?
             buffer.clear();
             reset_screen().await;
         }
