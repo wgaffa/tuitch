@@ -8,7 +8,7 @@ pub struct UserConfig {
     pub oauth_token: String,
 }
 
-pub fn set_client_config(path: &str) -> ClientConfig<StaticLoginCredentials> {
+pub async fn set_client_config(path: &str) -> ClientConfig<StaticLoginCredentials> {
     if fs::metadata(path).is_ok() {
         let config_file_content = fs::read_to_string(path).unwrap();
         let config: UserConfig = toml::from_str(&config_file_content.as_str()).unwrap();
@@ -21,12 +21,12 @@ pub fn set_client_config(path: &str) -> ClientConfig<StaticLoginCredentials> {
             username: String::new(),
             oauth_token: String::new(),
         };
-        create_config_file(path, config);
+        create_config_file(path, config).await;
         ClientConfig::default()
     }
 }
 
-pub fn create_config_file(path: &str, config: UserConfig) -> std::io::Result<()> {
+pub async fn create_config_file(path: &str, config: UserConfig) -> std::io::Result<()> {
     let config_toml = toml::to_string(&config).unwrap();
     fs::write(&path, config_toml)?;
     Ok(())

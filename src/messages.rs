@@ -1,8 +1,15 @@
 use chrono::{DateTime, Timelike, Utc};
 use owo_colors::{OwoColorize, Rgb};
-use std::io::{stdout, Write};
+use std::{
+    io::{stdout, Write},
+    sync::Arc,
+};
+use tokio::sync::RwLock;
 use twitch_irc::message::{
     ClearChatAction, HostTargetAction, RGBColor, ServerMessage, UserNoticeEvent,
+};
+use twitch_irc::{
+    login::StaticLoginCredentials, /*ClientConfig,*/ SecureTCPTransport, TwitchIRCClient,
 };
 
 // TODO: Look into adding emotes.
@@ -201,14 +208,26 @@ pub async fn print_message(server_message: Option<String>, input_buffer: String)
     stdout().flush().unwrap();
 }
 
-pub async fn print_user_message(username: &str, input_buffer: String) {
+pub async fn send_user_message(
+    username: &str,
+    current_channel: &str,
+    input_buffer: Arc<RwLock<String>>,
+    client: &TwitchIRCClient<SecureTCPTransport, StaticLoginCredentials>,
+) {
+    let mut buffer = input_buffer.write().await;
     let now: DateTime<Utc> = Utc::now();
+    client
+        .privmsg(current_channel.to_owned(), buffer.to_owned())
+        .await
+        .unwrap();
     print!(
         "{}\r {}:{} {}: {}\n\n",
         termion::clear::CurrentLine,
         now.hour().dimmed(),
         now.minute().dimmed(),
         username.bold(),
-        input_buffer
+        buffer.to_string()
     );
+    buffer.clear();
+    print!("{}\r> ", termion::clear::CurrentLine);
 }

@@ -1,7 +1,7 @@
 #![allow(unused_variables, unused_must_use)]
 
 use crate::commands::run_command;
-use crate::messages::{format_message, print_message, print_user_message};
+use crate::messages::{format_message, print_message, send_user_message};
 use crate::user_config::{get_client_config, set_client_config};
 use crate::user_interface::reset_screen;
 use std::{io::stdout, io::Write, sync::Arc};
@@ -20,6 +20,13 @@ pub async fn main() -> std::io::Result<()> {
     // TODO: Need error-handling for channels
     // that do not exist and incorrect user input.
 
+    // User config path and the config struct itself,
+    // the struct is built from the contents of the config file
+    // and used to access the current username data.
+    // this is probably a temp setup for config while in development
+    // and will likely change when a more streamlined login
+    // and config system is done, including a working :login
+    // command for the user.
     let config_path = "Config.toml";
     let user_config = get_client_config(config_path).await;
 
@@ -50,13 +57,12 @@ pub async fn main() -> std::io::Result<()> {
     let (mut incoming_messages, client) = TwitchIRCClient::<
         SecureTCPTransport,
         StaticLoginCredentials,
-    >::new(set_client_config(config_path));
+    >::new(set_client_config(config_path).await);
 
     // TwitchIRCClient is thread safe, clone() can be called here.
     // client2 is used to send user messages to the Twitch servers.
     let client2 = client.clone();
 
-    // Create alternate screen, restores terminal on drop.
     let screen = AlternateScreen::from(stdout());
     reset_screen().await;
 
@@ -81,8 +87,6 @@ pub async fn main() -> std::io::Result<()> {
         // Set terminal to raw mode to allow reading
         // stdin one key at a time.
         let mut stdout = stdout().into_raw_mode().unwrap();
-
-        // Use asynchronous stdin.
         let mut stdin = termion::async_stdin().keys();
 
         loop {
@@ -104,26 +108,13 @@ pub async fn main() -> std::io::Result<()> {
                                 // parsing the command and running its logic.
                                 command_tx.send(()).ok();
                             } else {
-                                // if the input_buffer does not begin with a ':',
-                                // it's treated as a normal chat message, which is 
-                                // sent to the Twitch servers.
-                                client2
-                                    .privmsg(
-                                        current_channel.read().await.to_owned(),
-                                        input_buffer.read().await.to_owned(),
-                                    )
-                                    .await
-                                    .unwrap();
-                                // Sent messages have to be formatted and printed
-                                // to the terminal manually, twitch_irc doesn't 
-                                // seem to see these as incoming messages.
-                                print_user_message(
+                                send_user_message(
                                     user_name.read().await.as_str(),
-                                    input_buffer.read().await.to_string(),
+                                    current_channel.read().await.as_str(),
+                                    Arc::clone(&input_buffer),
+                                    &client2,
                                 )
                                 .await;
-                                input_buffer.write().await.clear();
-                                print!("{}\r> ", termion::clear::CurrentLine);
                             }
                         }
                     }
@@ -135,6 +126,8 @@ pub async fn main() -> std::io::Result<()> {
                     }
 
                     termion::event::Key::Backspace => {
+                        // Backspace does nothing unless the input_buffer
+                        // has characters to delete.
                         if !input_buffer.read().await.is_empty() {
                             input_buffer.write().await.pop();
                             write!(
