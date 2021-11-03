@@ -99,7 +99,6 @@ pub async fn main() -> std::io::Result<()> {
                         shutdown_tx.send(()).ok();
                         break;
                     }
-
                     termion::event::Key::Char('\n') => {
                         if !input_buffer.read().await.is_empty() {
                             if first_char == Some(':') {
@@ -124,7 +123,6 @@ pub async fn main() -> std::io::Result<()> {
                         write!(stdout, "{}", user_input);
                         input_buffer.write().await.push(user_input);
                     }
-
                     termion::event::Key::Backspace => {
                         // Backspace does nothing unless the input_buffer
                         // has characters to delete.
@@ -153,6 +151,7 @@ pub async fn main() -> std::io::Result<()> {
                 Ok(command) = command_rx.recv() => run_command(
                     Arc::clone(&input_buffer_lock),
                     Arc::clone(&current_channel_read),
+                    &config_path,
                     &client
                     ).await
             };
