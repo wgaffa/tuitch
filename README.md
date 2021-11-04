@@ -10,7 +10,7 @@ Tuitch uses the [`twitch_irc`](https://docs.rs/twitch-irc/3.0.1/twitch_irc/) cra
 Right now, I haven't built any deployment or installation for the project, so you'll need to clone the repository yourself. This project is in early development and I only have so much free time on my hands.
 
 ## How to use Tuitch
-Tuitch comes with very basic commands and functionality. You can type `:help` in the chat bar to bring up a list of commands, they include `:join <channel>` to join a Twitch channel's chatroom and `:credentials` to update your config file's user credentials (username and the OAuth token).
+Tuitch comes with very basic commands and functionality. A list of commands is shown on the home page when the appliction starts, they include `:join <channel>` to join a Twitch channel's chatroom and `:credentials` to update your config file's user credentials (username and the OAuth token).
 
 ## Planned features and contributions
 If you would like to contribute to this project then I am open to pull requests and bug fixes. This project started as a learning opportunity and has grown into most of the functionality I set out to attempt. 
