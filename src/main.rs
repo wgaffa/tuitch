@@ -1,4 +1,4 @@
-#![allow(unused_variables, unused_must_use)]
+#![allow()]
 
 use crate::commands::run_command;
 use crate::messages::{format_message, print_message, send_user_message};
@@ -34,7 +34,7 @@ pub async fn main() -> std::io::Result<()> {
     let current_channel = Arc::new(RwLock::new(String::new()));
     let user_name = Arc::new(RwLock::new(user_config.username));
     let current_channel_read = Arc::clone(&current_channel);
-    let user_name_read = Arc::clone(&user_name);
+    let _user_name_read = Arc::clone(&user_name);
     let placeholder: &str = "Enter a message or command";
 
     // Input-buffer for user's typed input and chat messages.
@@ -47,11 +47,11 @@ pub async fn main() -> std::io::Result<()> {
     // Create tx/rx to send and receive shutdown signal
     // when specific user input is detected.
     let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
-    let shutdown_rx2 = shutdown_tx.subscribe();
-    let shutdown_rx3 = shutdown_tx.subscribe();
+    let _shutdown_rx2 = shutdown_tx.subscribe();
+    let _shutdown_rx3 = shutdown_tx.subscribe();
 
     // Channel for chat-line commands and settings.
-    let (command_tx, command_rx) = broadcast::channel(2);
+    let (command_tx, _command_rx) = broadcast::channel(2);
     let mut command_rx = command_tx.subscribe();
 
     // The TwitchIRCClient is built with either the default (read-only) or Twitch
@@ -83,7 +83,7 @@ pub async fn main() -> std::io::Result<()> {
                             &placeholder.dimmed(),
                             termion::cursor::Right(2)
                            );
-                        stdout().lock().flush();
+                        stdout().lock().flush().unwrap();
                        }
                 },
                 // End process if sender message received.
@@ -130,16 +130,16 @@ pub async fn main() -> std::io::Result<()> {
                                 "\r> {}\r{}",
                                 &placeholder.dimmed(),
                                 termion::cursor::Right(2)
-                            );
+                            ).unwrap();
                         }
                     }
                     termion::event::Key::Char(user_input) => {
                         // write user input to the console
                         // and save it to input_buffer
                         if !input_buffer.read().await.is_empty() {
-                            write!(stdout, "{}", user_input);
+                            write!(stdout, "{}", user_input).unwrap();
                         } else {
-                            write!(stdout, "{}\r> {}", termion::clear::CurrentLine, user_input);
+                            write!(stdout, "{}\r> {}", termion::clear::CurrentLine, user_input).unwrap();
                         }
                         input_buffer.write().await.push(user_input);
                     }
@@ -153,14 +153,14 @@ pub async fn main() -> std::io::Result<()> {
                                 "{}{}",
                                 termion::cursor::Left(1),
                                 termion::clear::AfterCursor
-                            );
-                            if input_buffer.read().await.is_empty() {
+                            ).unwrap();
+                            if input_buffer.read().await.is_empty(){
                                 write!(
                                     stdout,
                                     "\r> {}\r{}",
                                     &placeholder.dimmed(),
                                     termion::cursor::Right(2)
-                                );
+                                ).unwrap();
                             }
                         }
                     }
@@ -176,7 +176,7 @@ pub async fn main() -> std::io::Result<()> {
             select! {
                 // if a command ':' is found in a sent input buffer,
                 // call run_command to parse the input and handle the command
-                Ok(command) = command_rx.recv() => run_command(
+                Ok(_command) = command_rx.recv() => run_command(
                     Arc::clone(&input_buffer_lock),
                     Arc::clone(&current_channel_read),
                     &config_path,
@@ -190,5 +190,6 @@ pub async fn main() -> std::io::Result<()> {
     // If you return instead of waiting,
     // the background task will exit.
     futures::join!(join_handle, join_handle2, join_handle3);
+    screen.lock().flush().unwrap();
     Ok(())
 }

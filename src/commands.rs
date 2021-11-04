@@ -72,5 +72,5 @@ pub async fn credentials_command(new_username: String, token: String, config_pat
         username: new_username,
         oauth_token: token,
     };
-    create_config_file(config_path, config).await;
+    create_config_file(config_path, config).await.unwrap();
 }

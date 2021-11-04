@@ -21,7 +21,7 @@ pub async fn set_client_config(path: &str) -> ClientConfig<StaticLoginCredential
             username: String::new(),
             oauth_token: String::new(),
         };
-        create_config_file(path, config).await;
+        create_config_file(path, config).await.unwrap();
         ClientConfig::default()
     }
 }
