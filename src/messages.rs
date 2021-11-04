@@ -16,7 +16,6 @@ use twitch_irc::{
 // TODO: Text alignment.
 // TODO: Window sizing.
 // TODO: Scrolling through chat history.
-// TODO: Fix non-user message formatting.
 // TODO: Look into chat replies from users.
 
 pub async fn format_message(message: ServerMessage) -> Option<String> {
@@ -177,10 +176,10 @@ pub async fn format_message(message: ServerMessage) -> Option<String> {
 
         // TODO: Look into and proper message removal.
         // Will probably need to buffer n incoming messages.
-        ServerMessage::ClearMsg(_) => Some(format!("Message deleted.")),
-        ServerMessage::GlobalUserState(_) => Some(format!("Login successful!")),
-        ServerMessage::Part(_) => Some(format!("Departed chat.")),
-        ServerMessage::Notice(notice) => Some(format!("{}", notice.message_text)),
+        ServerMessage::ClearMsg(_) => Some(format!("Message deleted.\n")),
+        ServerMessage::GlobalUserState(_) => Some(format!("Login successful!\n")),
+        ServerMessage::Part(_) => Some(format!("Departed chat.\n")),
+        ServerMessage::Notice(notice) => Some(format!("{}\n", notice.message_text)),
         ServerMessage::Join(join) => Some(format!("Joined {}'s chat!\n\n", join.channel_login)),
 
         // Any other events that do not need to be verbose

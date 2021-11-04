@@ -1,5 +1,5 @@
 use crate::user_config::{create_config_file, UserConfig};
-use crate::user_interface::reset_screen;
+use crate::user_interface::/*print_help*/ reset_screen;
 use std::{collections::HashSet, sync::Arc};
 use tokio::sync::RwLock;
 use twitch_irc::{
@@ -42,7 +42,7 @@ pub async fn run_command(
             buffer.clear();
             reset_screen().await;
         }
-        _ => {}
+       _ => {}
     }
 }
 

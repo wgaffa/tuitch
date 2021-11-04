@@ -3,7 +3,7 @@
 use crate::commands::run_command;
 use crate::messages::{format_message, print_message, send_user_message};
 use crate::user_config::{get_client_config, set_client_config};
-use crate::user_interface::reset_screen;
+use crate::user_interface::home_screen;
 use owo_colors::OwoColorize;
 use std::{io::stdout, io::Write, sync::Arc};
 use termion::{input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
@@ -66,7 +66,7 @@ pub async fn main() -> std::io::Result<()> {
     let client2 = client.clone();
 
     let screen = AlternateScreen::from(stdout());
-    reset_screen().await;
+    home_screen().await;
 
     // Start consuming incoming messages, otherwise they will back up.
     //
