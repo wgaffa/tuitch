@@ -35,7 +35,7 @@ pub async fn main() -> std::io::Result<()> {
     let user_name = Arc::new(RwLock::new(user_config.username));
     let current_channel_read = Arc::clone(&current_channel);
     let _user_name_read = Arc::clone(&user_name);
-    let placeholder: &str = "Enter a message or command";
+    let placeholder = "Enter a message or command";
 
     // Input-buffer for user's typed input and chat messages.
     // This is a shared state to allow proper handling with incoming
@@ -80,7 +80,7 @@ pub async fn main() -> std::io::Result<()> {
                     if input_buffer2.read().await.is_empty() {
                         print!(
                             "\r> {}\r{}",
-                            &placeholder.dimmed(),
+                            placeholder.dimmed(),
                             termion::cursor::Right(2)
                            );
                         stdout().lock().flush().unwrap();
