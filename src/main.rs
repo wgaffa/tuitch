@@ -4,7 +4,6 @@ use crate::commands::run_command;
 use crate::messages::{format_message, print_message, send_user_message};
 use crate::user_config::{get_client_config, set_client_config};
 use crate::user_interface::home_screen;
-use owo_colors::OwoColorize;
 use std::{io::stdout, io::Write, sync::Arc};
 use termion::{input::TermRead, raw::IntoRawMode, screen::AlternateScreen};
 use tokio::{select, sync::broadcast, sync::RwLock};
@@ -35,7 +34,6 @@ pub async fn main() -> std::io::Result<()> {
     let user_name = Arc::new(RwLock::new(user_config.username));
     let current_channel_read = Arc::clone(&current_channel);
     let _user_name_read = Arc::clone(&user_name);
-    let placeholder = "Enter a message or command";
 
     // Input-buffer for user's typed input and chat messages.
     // This is a shared state to allow proper handling with incoming
@@ -66,7 +64,7 @@ pub async fn main() -> std::io::Result<()> {
     let client2 = client.clone();
 
     let screen = AlternateScreen::from(stdout());
-    home_screen().await;
+    home_screen();
 
     // Start consuming incoming messages, otherwise they will back up.
     //
@@ -78,13 +76,8 @@ pub async fn main() -> std::io::Result<()> {
                 Some(message) = incoming_messages.recv() => {
                     print_message(format_message(message).await, input_buffer2.read().await.to_string()).await;
                     if input_buffer2.read().await.is_empty() {
-                        print!(
-                            "\r> {}\r{}",
-                            placeholder.dimmed(),
-                            termion::cursor::Right(2)
-                           );
-                        stdout().lock().flush().unwrap();
-                       }
+                        user_interface::empty_line();
+                    }
                 },
                 // End process if sender message received.
                 _ = shutdown_rx.recv() => break,
@@ -125,12 +118,7 @@ pub async fn main() -> std::io::Result<()> {
                                 )
                                 .await;
                             }
-                            write!(
-                                stdout,
-                                "\r> {}\r{}",
-                                &placeholder.dimmed(),
-                                termion::cursor::Right(2)
-                            ).unwrap();
+                            user_interface::empty_line();
                         }
                     }
                     termion::event::Key::Char(user_input) => {
@@ -155,12 +143,7 @@ pub async fn main() -> std::io::Result<()> {
                                 termion::clear::AfterCursor
                             ).unwrap();
                             if input_buffer.read().await.is_empty(){
-                                write!(
-                                    stdout,
-                                    "\r> {}\r{}",
-                                    &placeholder.dimmed(),
-                                    termion::cursor::Right(2)
-                                ).unwrap();
+                                user_interface::empty_line();
                             }
                         }
                     }
