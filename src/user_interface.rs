@@ -2,22 +2,21 @@ use owo_colors::OwoColorize;
 use std::io::{stdout, Write};
 use termion::terminal_size;
 
-pub async fn reset_screen() {
+pub fn reset_screen() {
     let (_x, y) = terminal_size().unwrap();
     print!(
-        "{}{}> {}\r{}",
+        "{}{}> {}",
         termion::clear::All,
         termion::cursor::Goto(1, y),
-        "Enter a message or command".dimmed(),
-        termion::cursor::Right(2)
+        placeholder(),
     );
     stdout().lock().flush().unwrap();
 }
 
-pub async fn home_screen() {
+pub fn home_screen() {
     let (_x, y) = terminal_size().unwrap();
     print!(
-        "{}{}{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n\n{}> {}\r{}",
+        "{}{}{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n{}\r\n\n{}> {}",
         termion::clear::All,
         termion::cursor::Goto(1, 1),
         "Commands:",
@@ -29,8 +28,24 @@ pub async fn home_screen() {
         "If you have any suggestions or would like to report any bugs, please visit the",
         "project's GitHub repository at https://github.com/brandontdev/tuitch.",
         termion::cursor::Goto(1, y),
-        "Enter a message or command".dimmed(),
-        termion::cursor::Right(2)
+        placeholder(),
     );
     stdout().lock().flush().unwrap();
+}
+
+pub fn empty_line() {
+    print!(
+        "\r> {}",
+        placeholder(),
+    );
+    stdout().lock().flush().unwrap();
+}
+
+fn placeholder() -> String {
+    const PLACEHOLDER: &str = "Enter a message or command";
+    format!(
+        "{}\r{}",
+        PLACEHOLDER.dimmed(),
+        termion::cursor::Right(2)
+    )
 }

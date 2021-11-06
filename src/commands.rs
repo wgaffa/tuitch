@@ -21,7 +21,7 @@ pub async fn run_command(
                 join_command(channel.to_string(), current_channel, &client).await;
             }
             buffer.clear();
-            reset_screen().await;
+            reset_screen();
         }
         //        Some(":login") => {
         //            if let Some(username) = command.next() {
@@ -40,7 +40,7 @@ pub async fn run_command(
                 .await;
             }
             buffer.clear();
-            reset_screen().await;
+            reset_screen();
         }
        _ => {}
     }
