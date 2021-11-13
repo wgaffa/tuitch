@@ -24,7 +24,7 @@ pub fn home_screen() {
         "To change your login credentials, enter :credentials <username> <OAuth token>",
         "(Your OAuth token is saved locally, however at this time it is not encryptid,",
         "please never share your OAuth token with anyone.)",
-        "Enter :help to bring up this help documentation.",
+        "'Ctrl-q' to exit the application",
         "If you have any suggestions or would like to report any bugs, please visit the",
         "project's GitHub repository at https://github.com/brandontdev/tuitch.",
         termion::cursor::Goto(1, y),

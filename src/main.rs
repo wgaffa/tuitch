@@ -96,12 +96,7 @@ pub async fn main() -> std::io::Result<()> {
             let first_char = input_buffer.read().await.chars().nth(0);
             if let Some(Ok(key)) = input {
                 match key {
-                    termion::event::Key::Esc => {
-                        // Send message to receivers to end process.
-                        shutdown_tx.send(()).ok();
-                        break;
-                    }
-                    termion::event::Key::Char('\n') => {
+                   termion::event::Key::Char('\n') => {
                         if !input_buffer.read().await.is_empty() {
                             if first_char == Some(':') {
                                 // If the entered input buffer starts with a ':'
@@ -163,6 +158,12 @@ pub async fn main() -> std::io::Result<()> {
                             }
                         }
                     }
+                    termion::event::Key::Ctrl('q') => {
+                        // Send message to receivers to end process.
+                        shutdown_tx.send(()).ok();
+                        break;
+                    }
+ 
                     _ => {}
                 }
                 stdout.lock().flush().unwrap();
