@@ -34,18 +34,11 @@ pub fn home_screen() {
 }
 
 pub fn empty_line() {
-    print!(
-        "\r> {}",
-        placeholder(),
-    );
+    print!("\r> {}", placeholder(),);
     stdout().lock().flush().unwrap();
 }
 
 fn placeholder() -> String {
     const PLACEHOLDER: &str = "Enter a message or command";
-    format!(
-        "{}\r{}",
-        PLACEHOLDER.dimmed(),
-        termion::cursor::Right(2)
-    )
+    format!("{}\r{}", PLACEHOLDER.dimmed(), termion::cursor::Right(2))
 }

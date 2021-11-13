@@ -44,13 +44,11 @@ pub async fn main() -> std::io::Result<()> {
 
     // Create tx/rx to send and receive shutdown signal
     // when specific user input is detected.
-    let (shutdown_tx, mut shutdown_rx) = broadcast::channel(1);
-    let _shutdown_rx2 = shutdown_tx.subscribe();
-    let _shutdown_rx3 = shutdown_tx.subscribe();
+    let (shutdown_tx, mut shutdown_rx) = broadcast::channel(2);
+    let mut shutdown_rx2 = shutdown_tx.subscribe();
 
     // Channel for chat-line commands and settings.
-    let (command_tx, _command_rx) = broadcast::channel(2);
-    let mut command_rx = command_tx.subscribe();
+    let (command_tx, mut command_rx) = broadcast::channel(2);
 
     // The TwitchIRCClient is built with either the default (read-only) or Twitch
     // login credentials (username & OAuth token pair).
@@ -91,6 +89,7 @@ pub async fn main() -> std::io::Result<()> {
         // stdin one key at a time.
         let mut stdout = stdout().into_raw_mode().unwrap();
         let mut stdin = termion::async_stdin().keys();
+        let mut buffer_position = input_buffer.read().await.len();
 
         loop {
             let input = stdin.next();
@@ -127,9 +126,25 @@ pub async fn main() -> std::io::Result<()> {
                         if !input_buffer.read().await.is_empty() {
                             write!(stdout, "{}", user_input).unwrap();
                         } else {
-                            write!(stdout, "{}\r> {}", termion::clear::CurrentLine, user_input).unwrap();
+                            write!(stdout, "{}{}", termion::clear::AfterCursor, user_input)
+                                .unwrap();
                         }
                         input_buffer.write().await.push(user_input);
+                        buffer_position += 1;
+                    }
+                    termion::event::Key::Left => {
+                        if buffer_position == 0 {
+                        } else {
+                            write!(stdout, "{}", termion::cursor::Left(1)).unwrap();
+                            buffer_position -= 1;
+                        }
+                    }
+                    termion::event::Key::Right => {
+                        if buffer_position == input_buffer.read().await.len() {
+                        } else {
+                            write!(stdout, "{}", termion::cursor::Right(1)).unwrap();
+                            buffer_position += 1;
+                        }
                     }
                     termion::event::Key::Backspace => {
                         // Backspace does nothing unless the input_buffer
@@ -141,8 +156,9 @@ pub async fn main() -> std::io::Result<()> {
                                 "{}{}",
                                 termion::cursor::Left(1),
                                 termion::clear::AfterCursor
-                            ).unwrap();
-                            if input_buffer.read().await.is_empty(){
+                            )
+                            .unwrap();
+                            if input_buffer.read().await.is_empty() {
                                 user_interface::empty_line();
                             }
                         }
@@ -157,14 +173,17 @@ pub async fn main() -> std::io::Result<()> {
     let join_handle3 = tokio::spawn(async move {
         loop {
             select! {
-                // if a command ':' is found in a sent input buffer,
-                // call run_command to parse the input and handle the command
-                Ok(_command) = command_rx.recv() => run_command(
-                    Arc::clone(&input_buffer_lock),
-                    Arc::clone(&current_channel_read),
-                    &config_path,
-                    &client
-                    ).await
+                    // if a command ':' is found in a sent input buffer,
+                    // call run_command to parse the input and handle the command
+                    Ok(_command) = command_rx.recv() => { run_command(
+                        Arc::clone(&input_buffer_lock),
+                        Arc::clone(&current_channel_read),
+                        &config_path,
+                        &client
+                        ).await
+                },
+                     // End process if sender message received.
+                    _ = shutdown_rx2.recv() => break,
             };
         }
     });
