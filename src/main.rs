@@ -88,10 +88,13 @@ pub async fn main() -> std::io::Result<()> {
         // Set terminal to raw mode to allow reading
         // stdin one key at a time.
         let mut stdout = stdout().into_raw_mode().unwrap();
-        let mut stdin = termion::async_stdin().keys();
+        let mut stdin = std::io::stdin().keys();
         let mut buffer_position = input_buffer.read().await.len();
 
         loop {
+            // TODO: Look into thread spawn or tokio::Stdin, .next() poss blocking main thread.
+            // TODO: Also look into poss channel, maybe abstract some of the pattern 
+            // matching?
             let input = stdin.next();
             let first_char = input_buffer.read().await.chars().nth(0);
             if let Some(Ok(key)) = input {
@@ -153,6 +156,7 @@ pub async fn main() -> std::io::Result<()> {
                                 termion::clear::AfterCursor
                             )
                             .unwrap();
+                            buffer_position -= 1;
                             if input_buffer.read().await.is_empty() {
                                 user_interface::empty_line();
                             }
